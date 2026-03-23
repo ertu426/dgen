@@ -16,6 +16,7 @@ jobs:
         include:
           - directory: default
             image_name: default
+            tag: latest
       fail-fast: false
 
     permissions:
@@ -42,4 +43,4 @@ jobs:
           context: ./${{ matrix.directory }}
           file: ./${{ matrix.directory }}/Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/${{ matrix.image_name }}:latest,ghcr.io/${{ github.repository_owner }}/${{ matrix.image_name }}:${{ github.run_id }}
+          tags: ghcr.io/${{ github.repository_owner }}/${{ matrix.image_name }}:${{ matrix.tag }},ghcr.io/${{ github.repository_owner }}/${{ matrix.image_name }}:${{ github.run_id }}
