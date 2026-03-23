@@ -4,6 +4,9 @@ on:
   schedule:
     - cron: '0 22 * * *'
   workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
   build-and-push:
@@ -11,7 +14,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - directory: default-build-dev
+          - directory: default
             image_name: default
       fail-fast: false
 
