@@ -17,6 +17,9 @@ jobs:
           - directory: default
             image_name: default
             tag: latest
+          - directory: cangjie
+            image_name: cangjie
+            tag: latest
       fail-fast: false
 
     permissions:
