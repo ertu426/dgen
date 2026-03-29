@@ -1,0 +1,24 @@
+services:
+  default-develop:
+    image: default-develop
+    pull_policy: never
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: default-develop
+    restart: unless-stopped
+    ports:
+      - "30080:8080"
+      - "30022:22"
+    environment:
+      - TZ=Asia/Shanghai
+    networks:
+      - default-develop
+
+networks:
+  default-develop:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 192.168.35.0/24
