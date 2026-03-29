@@ -1,5 +1,8 @@
 FROM debian:latest
 
+LABEL org.opencontainers.image.source=https://github.com/ertu426/dgen
+LABEL org.opencontainers.image.licenses=MIT
+
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8
 ENV LANGUAGE=C.UTF-8

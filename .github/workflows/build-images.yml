@@ -44,4 +44,5 @@ jobs:
           file: ./${{ matrix.directory }}/Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64
+          outputs: type=image,name=target,annotation-index.org.opencontainers.image.description=My multi-arch image
           tags: ghcr.io/${{ github.repository_owner }}/${{ matrix.image_name }}:${{ matrix.tag }},ghcr.io/${{ github.repository_owner }}/${{ matrix.image_name }}:${{ github.run_id }}
