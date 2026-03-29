@@ -43,4 +43,5 @@ jobs:
           context: ./${{ matrix.directory }}
           file: ./${{ matrix.directory }}/Dockerfile
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: ghcr.io/${{ github.repository_owner }}/${{ matrix.image_name }}:${{ matrix.tag }},ghcr.io/${{ github.repository_owner }}/${{ matrix.image_name }}:${{ github.run_id }}
