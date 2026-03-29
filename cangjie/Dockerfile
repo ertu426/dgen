@@ -5,7 +5,7 @@ LABEL org.opencontainers.image.licenses=MIT
 
 USER root
 RUN apt-get update && apt-get install -y binutils libc-dev libc++-dev libgcc-14-dev build-essential && \
-    rm -rf /tmp/install_cangjie.sh /tmp/install_uv.sh /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/*
 
 
 COPY --chown=dev:dev --chmod=u+x scripts/install_cangjie.sh /tmp/install_cangjie.sh
@@ -14,8 +14,9 @@ COPY --chown=dev:dev --chmod=u+x scripts/install_uv.sh /tmp/install_uv.sh
 USER dev
 WORKDIR /home/dev
 RUN sudo chown dev:dev -R .
-RUN /bin/zsh /tmp/install_uv.sh
-RUN /bin/zsh /tmp/install_cangjie.sh
+RUN /bin/zsh /tmp/install_uv.sh &&\
+    /bin/zsh /tmp/install_cangjie.sh &&\
+    rm -rf /tmp/install_cangjie.sh /tmp/install_uv.sh
 
 
 USER root
