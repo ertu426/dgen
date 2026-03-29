@@ -44,9 +44,6 @@ if command -v fd &>/dev/null; then
     export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git'
 fi
 
-# ─── Zoxide (smart cd) ──────────────────────────────────────────────
-eval "$(zoxide init zsh)"
-
 # ─── Aliases ─────────────────────────────────────────────────────────
 alias ls='eza --icons --group-directories-first'
 alias ll='eza -la --icons --group-directories-first'

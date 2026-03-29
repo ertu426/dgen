@@ -54,8 +54,6 @@ RUN mkdir -p /home/dev/.local/bin && \
 USER dev
 WORKDIR /home/dev
 
-RUN curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
-
 COPY files/.zshrc .zshrc
 COPY files/starship.toml .config/starship.toml
 COPY files/config.yaml .config/code-server/config.yaml
