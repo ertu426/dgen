@@ -1,0 +1,24 @@
+services:
+  cangjie-develop:
+    image: cangjie-develop
+    pull_policy: never
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cangjie-develop
+    restart: unless-stopped
+    ports:
+      - "30080:8080"
+      - "30022:22"
+    environment:
+      - TZ=Asia/Shanghai
+    networks:
+      - cangjie-develop
+
+networks:
+  cangjie-develop:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 192.168.35.0/24

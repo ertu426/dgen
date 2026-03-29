@@ -53,10 +53,11 @@ RUN mkdir -p /home/dev/.local/bin && \
 
 USER dev
 WORKDIR /home/dev
+SHELL ["/bin/zsh"]
 
-COPY files/.zshrc .zshrc
-COPY files/starship.toml .config/starship.toml
-COPY files/config.yaml .config/code-server/config.yaml
+COPY --chown=dev:dev files/.zshrc .zshrc
+COPY --chown=dev:dev files/starship.toml .config/starship.toml
+COPY --chown=dev:dev files/config.yaml .config/code-server/config.yaml
 
 WORKDIR /home/dev/workspace
 
