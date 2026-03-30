@@ -12,10 +12,9 @@ COPY --chown=dev:dev --chmod=u+x scripts/install_uv.sh /tmp/install_uv.sh
 
 USER dev
 WORKDIR /home/dev
-RUN /bin/zsh /tmp/install_uv.sh &&\
-    /bin/zsh /tmp/install_cangjie.sh &&\
-    rm -rf /tmp/install_cangjie.sh /tmp/install_uv.sh
-
+RUN ["/bin/zsh", "-c", "/tmp/install_uv.sh"]
+RUN ["/bin/zsh", "-c", "/tmp/install_cangjie.sh"]
+RUN ["/bin/zsh", "-c", "rm -rf /tmp/install_cangjie.sh /tmp/install_uv.sh"]
 
 USER root
 EXPOSE 8080 22

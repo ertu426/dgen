@@ -46,21 +46,19 @@ RUN useradd -m -s /bin/zsh dev && \
     echo "dev:dev" | chpasswd && \
     echo "dev ALL=(ALL:ALL) NOPASSWD:ALL" >> /etc/sudoers
 
-RUN mkdir -p /home/dev/.local/bin && \
-    ln -sf "$(which batcat)" /home/dev/.local/bin/bat && \
-    ln -sf "$(which fdfind)" /home/dev/.local/bin/fd && \
-    chown -R dev:dev /home/dev/.local/bin
-
 USER dev
 WORKDIR /home/dev
-SHELL ["/bin/zsh"]
 
 COPY --chown=dev:dev files/.zshrc .zshrc
 COPY --chown=dev:dev files/starship.toml .config/starship.toml
 COPY --chown=dev:dev files/config.yaml .config/code-server/config.yaml
 
+RUN mkdir -p /home/dev/.local/bin &&\
+    ln -sf "$(which batcat)" /home/dev/.local/bin/bat &&\
+    ln -sf "$(which fdfind)" /home/dev/.local/bin/fd
+
 WORKDIR /home/dev/workspace
 
 USER root
 EXPOSE 8080 22
-ENTRYPOINT ["/usr/bin/zsh", "/start.sh"]
+ENTRYPOINT ["/start.sh"]
