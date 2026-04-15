@@ -12,13 +12,3 @@ services:
       - "30022:22"
     environment:
       - TZ=Asia/Shanghai
-    networks:
-      - default-develop
-
-networks:
-  default-develop:
-    driver: bridge
-    ipam:
-      driver: default
-      config:
-        - subnet: 192.168.35.0/24
