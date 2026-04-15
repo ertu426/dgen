@@ -16,7 +16,7 @@ LABEL org.opencontainers.image.description.zh="全栈开发容器，预装 Code 
 LABEL org.opencontainers.image.source="https://github.com/ertu426/dgen"
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.created="2026-03-23T14:43:23Z"
-LABEL org.opencontainers.image.version="1.0.0"
+LABEL org.opencontainers.image.version="1.0.1"
 LABEL org.opencontainers.image.vendor="DGen"
 LABEL org.opencontainers.image.base.name="debian:trixie-slim"
 
@@ -54,15 +54,8 @@ RUN apt-get update && \
         openssh-sftp-server \
         btop \
         build-essential \
-        ripgrep \
-        fd-find \
-        fzf \
         bat \
         eza \
-        zoxide \
-        git-delta \
-        lazygit \
-        btop \
         locales \
     && echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
     echo "zh_CN.UTF-8 UTF-8" >> /etc/locale.gen && \

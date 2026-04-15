@@ -12,13 +12,6 @@ echo "  DGen Development Container"
 echo "  Starting services..."
 echo "========================================"
 
-# Fix ownership for mounted volumes and any root-owned files in home
-echo "[Setup] Fixing directory permissions..."
-# Fix all files in home directory that might be owned by root (from bind mounts)
-find /home/dev -mindepth 1 ! -user dev -exec chown -R dev:dev {} + 2>/dev/null || true
-# Ensure critical directories exist with correct permissions
-mkdir -p /home/dev/workspace /home/dev/.config /home/dev/.ssh /home/dev/.cache /home/dev/.local
-chown -R dev:dev /home/dev
 
 # Generate SSH host keys if they don't exist
 if [ ! -f /etc/ssh/ssh_host_rsa_key ]; then
