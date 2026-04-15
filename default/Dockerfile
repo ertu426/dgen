@@ -41,6 +41,7 @@ USER dev
 WORKDIR /home/dev
 
 COPY --chown=dev:dev files/starship.toml .config/starship.toml
+COPY --chown=dev:dev files/config.fish .config/fish/config.fish
 COPY --chown=dev:dev files/config.yaml .config/code-server/config.yaml
 
 RUN mkdir -p /home/dev/.local/bin &&\
@@ -53,8 +54,7 @@ RUN mkdir -p /home/dev/.local/bin &&\
     git config --global delta.line-numbers true &&\
     git config --global delta.side-by-side true &&\
     git config --global merge.conflictstyle diff3 &&\
-    git config --global diff.colorMoved default &&\
-    echo "source (starship init fish --print-full-init | psub)" >> ~/.config/fish/config.fish
+    git config --global diff.colorMoved default
 
 ENV PATH=/home/dev/.local/bin:$PATH
 
