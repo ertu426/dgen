@@ -4,7 +4,7 @@ LABEL org.opencontainers.image.source=https://github.com/ertu426/dgen
 LABEL org.opencontainers.image.licenses=MIT
 
 USER root
-RUN ["/bin/sh", "-c", "apt-get update && apt-get install -y binutils libc-dev libc++-dev libgcc-14-dev build-essential && rm -rf /var/lib/apt/lists/*"]
+RUN ["/usr/bin/fish", "-c", "apt-get update && apt-get install -y binutils libc-dev libc++-dev libgcc-14-dev build-essential && rm -rf /var/lib/apt/lists/*"]
 
 
 COPY --chown=dev:dev --chmod=u+x scripts/install_cangjie.sh /tmp/install_cangjie.sh
@@ -12,9 +12,9 @@ COPY --chown=dev:dev --chmod=u+x scripts/install_uv.sh /tmp/install_uv.sh
 
 USER dev
 WORKDIR /home/dev
-RUN ["/bin/zsh", "-c", "/tmp/install_uv.sh"]
-RUN ["/bin/zsh", "-c", "/tmp/install_cangjie.sh"]
-RUN ["/bin/zsh", "-c", "rm -rf /tmp/install_cangjie.sh /tmp/install_uv.sh"]
+RUN ["/usr/bin/fish", "-c", "/tmp/install_uv.sh"]
+RUN ["/usr/bin/fish", "-c", "/tmp/install_cangjie.sh"]
+RUN ["/usr/bin/fish", "-c", "rm -rf /tmp/install_cangjie.sh /tmp/install_uv.sh"]
 
 USER root
 EXPOSE 8080 22
