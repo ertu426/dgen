@@ -15,7 +15,9 @@ COPY --chmod=+x files/start.sh /start.sh
 # ==========================================
 # 1. 基础系统配置与 APT 软件安装
 # ==========================================
-RUN sed -i 's/http:\/\/deb.debian.org/https:\/\/mirrors.ustc.edu.cn/g' /etc/apt/sources.list.d/debian.sources &&\
+RUN apt-get update &&\
+    apt-get install -y ca-certificates &&\
+    sed -i 's/http:\/\/deb.debian.org/https:\/\/mirrors.ustc.edu.cn/g' /etc/apt/sources.list.d/debian.sources &&\
     apt-get update &&\
     apt-get install -y wget curl neovim nano unzip zip openssh-server openssh-sftp-server git build-essential fish bat fd-find ripgrep jq fzf btop zoxide eza tealdeer git-delta lazygit  && \
     apt-get upgrade -y && \
