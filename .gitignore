@@ -1,1 +1,362 @@
-.workbuddy
+# =============================================================================
+# .gitignore — Docker Development Environment
+# =============================================================================
+# Author: ertu426
+# Description: Git ignore patterns for Docker development containers
+# =============================================================================
+
+# =============================================================================
+# Container Runtime & Build Artifacts
+# =============================================================================
+# Docker build cache
+.docker/
+
+# Built images (local)
+*.image
+*.tar
+*.tar.gz
+*.oci
+
+# Container volumes (data persistence)
+# These are managed by docker compose and should not be tracked
+# volumes:/data
+# volumes:/pgdata
+# volumes:/redisdata
+
+# Build secrets (never commit!)
+.env
+.env.*
+!.env.example
+
+# =============================================================================
+# Workspace Directories
+# =============================================================================
+# Each project has its own workspace that should not be tracked
+*/workspace/
+*/workspace/**
+*/workdir/
+*/workdir/**
+
+# Build outputs
+*.o
+*.so
+*.a
+*.lib
+*.dll
+*.exe
+*.out
+*.out.d
+
+# Cangjie build artifacts
+.cjpm/
+.cjpm-cache/
+*.cjo
+*.cjlib
+
+# =============================================================================
+# Configuration & State Files
+# =============================================================================
+# SSH keys (CRITICAL - never commit!)
+*.pem
+*.key
+*.pub
+*.cert
+*.crt
+
+# Known hosts (regenerate on new host)
+known_hosts
+.ssh/config
+
+# IDE & Editor state
+.workbuddy/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Dev Container (local overrides)
+.devcontainer/devcontainer-local.json
+.devcontainer/local-features/
+
+# Terminal session logs
+.bash_history
+.zsh_history
+.fish_history
+.sqlite_history
+
+# =============================================================================
+# Code Server & Extensions
+# =============================================================================
+# Extension cache (rebuilt on container restart)
+extensions/
+.cache/
+.local/share/
+.code-server/
+User/
+UserHistory/
+
+# Code Server auth
+auth.json
+password
+
+# =============================================================================
+# Language-Specific
+# =============================================================================
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-store/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+*.egg
+.venv/
+venv/
+env/
+.venv.bak/
+venv.bak/
+*.whl
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Rust / Cargo
+target/
+.cargo/
+Cargo.lock
+
+# Go
+vendor/
+*.test
+*.out
+
+# Java
+.mvn/
+.gradle/
+build/
+*.jar
+*.war
+*.ear
+
+# Ruby
+.bundle/
+vendor/bundle/
+Gemfile.lock
+
+# PHP
+vendor/
+composer.lock
+
+# =============================================================================
+# Build & Compilation
+# =============================================================================
+# Compiled files
+*.class
+*.pyc
+*.pyo
+*.pyd
+
+# Distribution / packaging
+.Python
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.manifest
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.hypothesis/
+
+# =============================================================================
+# Temporary Files
+# =============================================================================
+# OS files
+.DS_Store
+Desktop.ini
+Thumbs.db
+~$*
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+
+# Editor temp files
+*.orig
+*.merge
+*.rej
+*.orig.*
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Debug files
+*.pdb
+*.dSYM/
+*.dSYM
+
+# Temporary directories
+tmp/
+temp/
+tmpdir/
+temp_dir/
+
+# =============================================================================
+# Database Files
+# =============================================================================
+*.db
+*.sqlite
+*.sqlite3
+*.fdb
+*.mdf
+*.ldf
+*.bak
+*.dump
+
+# PostgreSQL
+postgresql.auto.conf
+postgresql.conf
+
+# Redis
+dump.rdb
+appendonly.aof
+
+# =============================================================================
+# Security & Secrets
+# =============================================================================
+# API keys and tokens
+*.token
+*.api_key
+*.secret
+*.credential
+credentials.json
+secrets.json
+.keyring/
+
+# Certificate files
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.truststore
+
+# Environment files (keep only example)
+.env.local
+.env.development
+.env.production
+.env.staging
+!.env.example
+
+# GitHub / GitLab tokens
+.github_token
+.gitlab_token
+
+# =============================================================================
+# Documentation Build
+# =============================================================================
+_site/
+_site/
+.sass-cache/
+.jekyll-cache/
+.jekyll-metadata
+*.md.html
+*.pdf
+*.epub
+
+# API documentation
+apidoc/
+openapi/
+swagger/
+
+# =============================================================================
+# CI/CD & DevOps
+# =============================================================================
+# GitHub Actions
+.actiontext/
+
+# Local deployment configs
+docker-stack.yml
+docker-stack.*.yml
+
+# Kubernetes (if used)
+*.kubeconfig
+kubectl-*
+
+# =============================================================================
+# Project-Specific
+# =============================================================================
+# Maven
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+
+# Gradle
+gradle-app.setting
+!gradle-wrapper.jar
+
+# Leiningen
+/lib/
+/classes/
+/target/
+/checkouts/
+
+# Erlang/Elixir
+.rebar3/
+_build/
+deps/
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# =============================================================================
+# Misc
+# =============================================================================
+*.crdownload
+*.crx
+*.xpi
+*.part
+*.partial
+*.listing

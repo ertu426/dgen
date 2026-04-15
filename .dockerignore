@@ -1,0 +1,59 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE and Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Build artifacts
+*.o
+*.a
+*.so
+*.dylib
+build/
+dist/
+*.egg-info/
+
+# Documentation drafts
+*.draft.md
+*.draft
+
+# Test files
+tests/
+test/
+*.test.*
+*.spec.*
+
+# Temporary files
+tmp/
+temp/
+*.log
+*.tmp
+
+# Local environment
+.env
+.env.local
+.env.*.local
+
+# Node modules (if any)
+node_modules/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Rust target
+target/
+
+# Docker related (keep Dockerfiles)
+!Dockerfile*
+!docker-compose*.yaml

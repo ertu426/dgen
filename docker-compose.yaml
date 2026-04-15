@@ -1,0 +1,182 @@
+# =============================================================================
+# docker-compose.yaml — DGen Development Containers
+# =============================================================================
+# Multi-container development environment with:
+#   - default: Universal development container
+#   - cangjie: Cangjie language development container
+# =============================================================================
+
+name: dgen-develop
+
+services:
+  # =============================================================================
+  # Default Development Container
+  # =============================================================================
+  default-develop:
+    image: ghcr.io/${GITHUB_ORG:-ertu426}/default:${VERSION:-latest}
+    pull_policy: ${PULL_POLICY:-if-not-present}
+    build:
+      context: ./default
+      dockerfile: Dockerfile
+      args:
+        - BUILDKIT_INLINE_CACHE=1
+    container_name: dgen-default-dev
+    restart: unless-stopped
+    
+    ports:
+      - "${DEFAULT_HTTP_PORT:-30080}:8080"
+      - "${DEFAULT_SSH_PORT:-30022}:2222"
+    
+    environment:
+      - TZ=${TZ:-Asia/Shanghai}
+      - LANG=zh_CN.UTF-8
+      - LANGUAGE=zh_CN:zh:en
+      - SHELL=/usr/bin/fish
+      - PASSWORD=${CODE_SERVER_PASSWORD:-dev123456}
+    
+    volumes:
+      # SSH keys (forward from host)
+      - ${SSH_AUTH_SOCK:-/dev/null}:/ssh-agent.sock:ro
+      - ~/.ssh:/home/dev/.ssh:ro
+      # Workspace
+      - default-workspace:/home/dev/workspace
+      # Code Server config
+      - default-config:/home/dev/.config
+      # VS Code extensions cache
+      - default-extensions:/home/dev/.cache/code-server/extensions
+    
+    environment:
+      SSH_AUTH_SOCK: /ssh-agent.sock
+    
+    networks:
+      - dgen-network
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '${DEFAULT_CPU_LIMIT:-2}'
+          memory: ${DEFAULT_MEM_LIMIT:-4G}
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    
+    shm_size: 256mb
+    
+    security_opt:
+      - seccomp:unconfined
+      - apparmor:unconfined
+    
+    stdin_open: true
+    tty: true
+
+  # =============================================================================
+  # Cangjie Development Container
+  # =============================================================================
+  cangjie-develop:
+    image: ghcr.io/${GITHUB_ORG:-ertu426}/cangjie:${VERSION:-latest}
+    pull_policy: ${PULL_POLICY:-if-not-present}
+    build:
+      context: ./cangjie
+      dockerfile: Dockerfile
+      args:
+        - BUILDKIT_INLINE_CACHE=1
+    container_name: dgen-cangjie-dev
+    restart: unless-stopped
+    depends_on:
+      - default-develop
+    
+    ports:
+      - "${CANGJIE_HTTP_PORT:-30180}:8080"
+      - "${CANGJIE_SSH_PORT:-30122}:2222"
+    
+    environment:
+      - TZ=${TZ:-Asia/Shanghai}
+      - LANG=zh_CN.UTF-8
+      - LANGUAGE=zh_CN:zh:en
+      - SHELL=/usr/bin/fish
+      - CANGJIE_HOME=/home/dev/cangjie
+      - CANGJIE_SDKX_HOME=/home/dev/cangjie_sdkx
+    
+    volumes:
+      # SSH keys
+      - ${SSH_AUTH_SOCK:-/dev/null}:/ssh-agent.sock:ro
+      - ~/.ssh:/home/dev/.ssh:ro
+      # Workspace
+      - cangjie-workspace:/home/dev/workspace
+      # Cangjie SDK cache
+      - cangjie-sdk:/home/dev/cangjie
+      - cangjie-stdx:/home/dev/cangjie_sdkx
+      # Code Server config
+      - cangjie-config:/home/dev/.config
+    
+    environment:
+      SSH_AUTH_SOCK: /ssh-agent.sock
+    
+    networks:
+      - dgen-network
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '${CANGJIE_CPU_LIMIT:-2}'
+          memory: ${CANGJIE_MEM_LIMIT:-4G}
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+    
+    healthcheck:
+      test: ["CMD", "bash", "-c", "command -v cjc && curl -f http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    
+    shm_size: 256mb
+    
+    security_opt:
+      - seccomp:unconfined
+      - apparmor:unconfined
+    
+    stdin_open: true
+    tty: true
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  dgen-network:
+    driver: bridge
+    name: dgen-develop-network
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  default-workspace:
+    name: dgen-default-workspace
+    driver: local
+  default-config:
+    name: dgen-default-config
+    driver: local
+  default-extensions:
+    name: dgen-default-extensions
+    driver: local
+  cangjie-workspace:
+    name: dgen-cangjie-workspace
+    driver: local
+  cangjie-sdk:
+    name: dgen-cangjie-sdk
+    driver: local
+  cangjie-stdx:
+    name: dgen-cangjie-stdx
+    driver: local
+  cangjie-config:
+    name: dgen-cangjie-config
+    driver: local
