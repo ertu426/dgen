@@ -1,9 +1,9 @@
 {
-  "name": "DGen — Default",
+  "name": "DGen — Vite / Nuxt",
   "dockerComposeFile": [
     "../docker-compose.yaml"
   ],
-  "service": "default-develop",
+  "service": "vite-develop",
   "workspaceFolder": "/home/dev/workspace",
   "shutdownAction": "stopCompose",
 
@@ -40,7 +40,7 @@
         "editor.fontSize": 14,
         "editor.fontFamily": "'Cascadia Code', 'JetBrains Mono', Consolas, monospace",
         "editor.fontLigatures": true,
-        "editor.tabSize": 4,
+        "editor.tabSize": 2,
         "editor.insertSpaces": true,
         "editor.formatOnSave": true,
         "editor.minimap.enabled": true,
@@ -65,12 +65,25 @@
         "git.confirmSync": false,
         "git.autofetch": true,
         "remote.SSH.showLoginTerminal": true,
-        "locale": "zh-cn"
+        "locale": "zh-cn",
+        "[typescript]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[javascript]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[vue]": {
+          "editor.defaultFormatter": "Vue.volar"
+        }
       },
       "extensions": [
         "GitHub.github-theme",
         "Equinusocio.vsc-material-theme",
         "PKief.material-icon-theme",
+        "Vue.volar",
+        "nuxt.vscode-nuxt",
+        "vite-plugin.vite",
+        "bradlc.vscode-tailwindcss",
         "ms-python.python",
         "ms-python.vscode-pylance",
         "dbaeumer.vscode-eslint",
@@ -92,14 +105,14 @@
   },
 
   "remoteUser": "dev",
-  "postCreateCommand": "fish -c 'echo \"DGen default ready!\"'",
+  "postCreateCommand": "fish -c 'node --version && npm --version && echo \"DGen Vite ready!\"'",
 
   "containerEnv": {
     "SHELL": "/usr/bin/fish"
   },
 
   "annotations": {
-    "org.opencontainers.image.description": "DGen — Universal development environment with Code Server, Fish Shell, and modern CLI tools",
+    "org.opencontainers.image.description": "DGen — Node.js / Vite / Nuxt frontend development environment with Code Server",
     "org.opencontainers.image.vendor": "DGen"
   }
 }
