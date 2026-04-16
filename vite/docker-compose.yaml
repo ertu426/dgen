@@ -5,20 +5,20 @@
 # =============================================================================
 
 services:
-  default-develop:
-    image: ghcr.io/${GITHUB_ORG:-ertu426}/default:${VERSION:-latest}
+  vite-develop:
+    image: ghcr.io/${GITHUB_ORG:-ertu426}/vite:${VERSION:-latest}
     pull_policy: ${PULL_POLICY:-if_not_present}
     build:
       context: .
       dockerfile: Dockerfile
       args:
         - BUILDKIT_INLINE_CACHE=1
-    container_name: dgen-default-dev
+    container_name: dgen-vite-dev
     restart: unless-stopped
     
     ports:
-      - "${HTTP_PORT:-30080}:8080"
-      - "${SSH_PORT:-30022}:2222"
+      - "${HTTP_PORT:-30280}:8080"
+      - "${SSH_PORT:-30222}:2222"
     
     environment:
       - TZ=${TZ:-Asia/Shanghai}

@@ -17,8 +17,8 @@ services:
     restart: unless-stopped
     
     ports:
-      - "${CANGJIE_HTTP_PORT:-30180}:8080"
-      - "${CANGJIE_SSH_PORT:-30122}:2222"
+      - "${HTTP_PORT:-30180}:8080"
+      - "${SSH_PORT:-30122}:2222"
     
     environment:
       - TZ=${TZ:-Asia/Shanghai}

@@ -1,324 +1,261 @@
 # =============================================================================
 # build-images.yml — Docker Image CI/CD Pipeline
 # =============================================================================
+# Flow:
+#   [build-base] default
+#       └── [build-images] cangjie / vite  (matrix, concurrent)
+#               └── [summary]
+#
 # Features:
-#   - Multi-architecture support (amd64, arm64)
-#   - Sequential build: default first, then concurrent builds
-#   - OCI annotations for rich metadata
-#   - Build caching for faster builds
-#   - Automated version tagging
+#   - Matrix strategy to eliminate duplicate Job definitions
+#   - GHCR registry cache (no /tmp cache hacks)
+#   - Multi-arch: linux/amd64, linux/arm64
+#   - Path-based selective trigger
+#   - OCI annotations + SBOM + Provenance
 # =============================================================================
 
 name: Build and Push Docker Images
 
 on:
-  # Scheduled daily build at 10 PM (Beijing time)
   schedule:
-    - cron: '0 14 * * *'  # 22:00 Beijing time = 14:00 UTC
-  
-  # Manual trigger
+    - cron: '0 14 * * *'   # 22:00 CST = 14:00 UTC
+
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Custom tag (default: latest)'
+        description: 'Image tag  (default: latest)'
         required: false
         default: 'latest'
         type: string
-      build_default_only:
-        description: 'Build default image only'
+      images:
+        description: 'Images to build  (all | default | downstream)'
         required: false
-        default: 'false'
-        type: boolean
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - default
+          - downstream
 
-  # Build on push to main
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
       - 'default/**'
       - 'cangjie/**'
-      - '.github/workflows/**'
+      - 'vite/**'
+      - '.github/workflows/build-images.yml'
 
+# ── Global env ───────────────────────────────────────────────────────────────
 env:
   REGISTRY: ghcr.io
-  TAG: ${{ github.event.inputs.tag || 'latest' }}
+  IMAGE_TAG: ${{ github.event.inputs.tag || 'latest' }}
+  PLATFORMS: linux/amd64,linux/arm64
 
+# ── Shared permissions ────────────────────────────────────────────────────────
+permissions:
+  contents: read
+  packages: write
+  attestations: write
+  id-token: write
+
+# =============================================================================
+# Job 1 — Build base image (default)  [must finish before downstream jobs]
+# =============================================================================
 jobs:
-  # =============================================================================
-  # Job 1: Build Default Image (Sequential - Must Complete First)
-  # =============================================================================
-  build-default:
+  build-base:
+    name: 'Build: default'
     runs-on: ubuntu-latest
-    if: ${{ github.event.inputs.build_default_only != 'true' }}
-    
-    permissions:
-      contents: read
-      packages: write
-      attestations: write
+    if: ${{ github.event.inputs.images != 'downstream' }}
+
+    outputs:
+      image: ${{ steps.meta.outputs.tags }}
+      digest: ${{ steps.build.outputs.digest }}
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+      - uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up QEMU for multi-arch
-        uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-qemu-action@v3
         with:
-          platforms: amd64,arm64
+          platforms: ${{ env.PLATFORMS }}
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        id: buildx
+      - uses: docker/setup-buildx-action@v3
 
-      - name: Inspect Docker builder
-        run: |
-          echo "Buildx name: ${{ steps.buildx.outputs.name }}"
-          docker buildx ls
-
-      - name: Cache Docker layers
-        uses: actions/cache@v4
+      - name: Generate image metadata
+        id: meta
+        uses: docker/metadata-action@v5
         with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-default-${{ hashFiles('default/**') }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-default-
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/default
+          tags: |
+            type=raw,value=${{ env.IMAGE_TAG }}
+            type=raw,value=build-${{ github.run_number }}
+            type=sha,prefix=sha-,format=short
 
-      - name: Build and push default image
+      - name: Build and push  [default]
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: ./default
-          file: ./default/Dockerfile
           push: true
-          platforms: linux/amd64,linux/arm64
-          tags: |
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/default:${{ env.TAG }}
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/default:${{ github.run_id }}
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/default:build-${{ github.run_number }}
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
-          build-args: |
-            BUILDKIT_INLINE_CACHE=1
-          # Rich OCI annotations
+          platforms: ${{ env.PLATFORMS }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ github.repository_owner }}/default:buildcache
+          cache-to:   type=registry,ref=${{ env.REGISTRY }}/${{ github.repository_owner }}/default:buildcache,mode=max
+          build-args: BUILDKIT_INLINE_CACHE=1
           annotations: |
             org.opencontainers.image.title=DGen Default Development Environment
             org.opencontainers.image.title.zh=DGen 通用开发环境
-            org.opencontainers.image.description=A comprehensive development container with Code Server, Fish shell, and modern CLI tools. Perfect for remote development via SSH or VS Code Dev Containers.
-            org.opencontainers.image.description.zh=全栈开发容器，预装 Code Server、Fish Shell 和现代化 CLI 工具。支持 SSH 远程连接和 VS Code Dev Containers，即开即用。
-            org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.licenses=MIT
-            org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}
-            org.opencontainers.image.version=${{ env.TAG }}
-            org.opencontainers.image.vendor=DGen
+            org.opencontainers.image.description=Comprehensive dev container with Code Server, Fish shell & modern CLI tools. SSH / VS Code Dev Containers ready.
+            org.opencontainers.image.description.zh=全栈开发容器，预装 Code Server、Fish Shell 和现代化 CLI 工具，开箱即用支持 SSH 远程连接和 VS Code Dev Containers。
             org.opencontainers.image.base.name=debian:trixie-slim
-            org.opencontainers.imagesimilarity.source=github.com/${{ github.repository }}
           provenance: true
           sbom: true
 
-      - name: Update Docker layers cache
-        run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
-
-      - name: Generate build summary
+      - name: Build summary
         if: always()
         run: |
-          echo "## ✅ Default Image Build Complete" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
-          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Image | `${{ env.REGISTRY }}/${{ github.repository_owner }}/default:${{ env.TAG }}` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Platforms | amd64, arm64 |" >> $GITHUB_STEP_SUMMARY
-          echo "| Tag | ${{ env.TAG }} |" >> $GITHUB_STEP_SUMMARY
+          STATUS=${{ job.status }}
+          ICON=$([[ "$STATUS" == "success" ]] && echo "✅" || echo "❌")
+          {
+            echo "## ${ICON} default — ${STATUS}"
+            echo "| | |"
+            echo "|---|---|"
+            echo "| **Image** | \`${{ env.REGISTRY }}/${{ github.repository_owner }}/default:${{ env.IMAGE_TAG }}\` |"
+            echo "| **Digest** | \`${{ steps.build.outputs.digest }}\` |"
+            echo "| **Platforms** | \`linux/amd64\` · \`linux/arm64\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
 
-  # =============================================================================
-  # Job 2: Build Cangjie Image (Concurrent with Other Non-Default Jobs)
-  # =============================================================================
-  build-cangjie:
+# =============================================================================
+# Job 2 — Build downstream images (matrix, concurrent)
+# =============================================================================
+  build-images:
+    name: 'Build: ${{ matrix.image }}'
     runs-on: ubuntu-latest
-    needs: build-default  # Depends on default build
-    
-    permissions:
-      contents: read
-      packages: write
-      attestations: write
+    needs: build-base
+    if: |
+      always() &&
+      needs.build-base.result != 'failure' &&
+      github.event.inputs.images != 'default'
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: cangjie
+            context: ./cangjie
+            title_en: 'DGen Cangjie Development Environment'
+            title_zh: 'DGen 仓颉开发环境'
+            desc_en: 'Cangjie language dev container with SDK, stdx & uv Python manager. Multi-arch: x86_64 / ARM64.'
+            desc_zh: '仓颉编程语言开发容器，预装 SDK、标准库及 uv Python 管理工具，支持 x86_64 和 ARM64 架构。'
+            base: ${{ format('{0}/{1}/default:latest', 'ghcr.io', github.repository_owner) }}
+
+          - image: vite
+            context: ./vite
+            title_en: 'DGen Vite Development Environment'
+            title_zh: 'DGen Vite 开发环境'
+            desc_en: 'Vite-based front-end dev container extending the default image. Ships with Node.js and Vite toolchain.'
+            desc_zh: '基于 default 镜像的 Vite 前端开发容器，内置 Node.js 和 Vite 工具链。'
+            base: ${{ format('{0}/{1}/default:latest', 'ghcr.io', github.repository_owner) }}
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+      - uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up QEMU for multi-arch
-        uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-qemu-action@v3
         with:
-          platforms: amd64,arm64
+          platforms: ${{ env.PLATFORMS }}
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        id: buildx
+      - uses: docker/setup-buildx-action@v3
 
-      - name: Cache Docker layers
-        uses: actions/cache@v4
+      - name: Generate image metadata
+        id: meta
+        uses: docker/metadata-action@v5
         with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-cangjie-${{ hashFiles('cangjie/**') }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-cangjie-
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.image }}
+          tags: |
+            type=raw,value=${{ env.IMAGE_TAG }}
+            type=raw,value=build-${{ github.run_number }}
+            type=sha,prefix=sha-,format=short
 
-      - name: Build and push cangjie image
+      - name: Build and push  [${{ matrix.image }}]
+        id: build
         uses: docker/build-push-action@v6
         with:
-          context: ./cangjie
-          file: ./cangjie/Dockerfile
+          context: ${{ matrix.context }}
           push: true
-          platforms: linux/amd64,linux/arm64
-          tags: |
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/cangjie:${{ env.TAG }}
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/cangjie:${{ github.run_id }}
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/cangjie:build-${{ github.run_number }}
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
-          build-args: |
-            BUILDKIT_INLINE_CACHE=1
-          # Rich OCI annotations
+          platforms: ${{ env.PLATFORMS }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.image }}:buildcache
+          cache-to:   type=registry,ref=${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.image }}:buildcache,mode=max
+          build-args: BUILDKIT_INLINE_CACHE=1
           annotations: |
-            org.opencontainers.image.title=DGen Cangjie Development Environment
-            org.opencontainers.image.title.zh=DGen 仓颉开发环境
-            org.opencontainers.image.description=Development container for Cangjie programming language with SDK, stdx, and uv Python management. Supports x86_64 and ARM64 architectures.
-            org.opencontainers.image.description.zh=仓颉编程语言开发容器，预装 SDK、标准库和 uv Python 管理工具。支持 x86_64 和 ARM64 架构。
-            org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.licenses=MIT
-            org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}
-            org.opencontainers.image.version=${{ env.TAG }}
-            org.opencontainers.image.vendor=DGen
-            org.opencontainers.image.base.name=debian:trixie-slim
-            org.opencontainers.imagesimilarity.source=github.com/${{ github.repository }}
+            org.opencontainers.image.title=${{ matrix.title_en }}
+            org.opencontainers.image.title.zh=${{ matrix.title_zh }}
+            org.opencontainers.image.description=${{ matrix.desc_en }}
+            org.opencontainers.image.description.zh=${{ matrix.desc_zh }}
+            org.opencontainers.image.base.name=${{ matrix.base }}
           provenance: true
           sbom: true
 
-      - name: Update Docker layers cache
-        run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
-
-      - name: Generate build summary
+      - name: Build summary
         if: always()
         run: |
-          echo "## ✅ Cangjie Image Build Complete" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
-          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Image | `${{ env.REGISTRY }}/${{ github.repository_owner }}/cangjie:${{ env.TAG }}` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Platforms | amd64, arm64 |" >> $GITHUB_STEP_SUMMARY
-          echo "| Tag | ${{ env.TAG }} |" >> $GITHUB_STEP_SUMMARY
+          STATUS=${{ job.status }}
+          ICON=$([[ "$STATUS" == "success" ]] && echo "✅" || echo "❌")
+          {
+            echo "## ${ICON} ${{ matrix.image }} — ${STATUS}"
+            echo "| | |"
+            echo "|---|---|"
+            echo "| **Image** | \`${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.image }}:${{ env.IMAGE_TAG }}\` |"
+            echo "| **Digest** | \`${{ steps.build.outputs.digest }}\` |"
+            echo "| **Platforms** | \`linux/amd64\` · \`linux/arm64\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
 
-  # =============================================================================
-  # Job 3: Build Default Only (when requested)
-  # =============================================================================
-  build-default-only:
-    runs-on: ubuntu-latest
-    if: ${{ github.event.inputs.build_default_only == 'true' }}
-    
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up QEMU for multi-arch
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: amd64,arm64
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Cache Docker layers
-        uses: actions/cache@v4
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-default-${{ hashFiles('default/**') }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-default-
-
-      - name: Build and push default image
-        uses: docker/build-push-action@v6
-        with:
-          context: ./default
-          file: ./default/Dockerfile
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: |
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/default:${{ env.TAG }}
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/default:${{ github.run_id }}
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
-          annotations: |
-            org.opencontainers.image.title=DGen Default Development Environment
-            org.opencontainers.image.title.zh=DGen 通用开发环境
-            org.opencontainers.image.description=A comprehensive development container with Code Server, Fish shell, and modern CLI tools.
-            org.opencontainers.image.description.zh=全栈开发容器，预装 Code Server、Fish Shell 和现代化 CLI 工具。
-            org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.licenses=MIT
-            org.opencontainers.image.vendor=DGen
-
-  # =============================================================================
-  # Job 4: Final Summary
-  # =============================================================================
+# =============================================================================
+# Job 3 — Final summary
+# =============================================================================
   summary:
+    name: 'Pipeline Summary'
     runs-on: ubuntu-latest
     if: always()
-    needs: [build-default, build-cangjie, build-default-only]
-    
+    needs: [build-base, build-images]
+
     steps:
-      - name: Generate final summary
+      - name: Final summary
         run: |
-          echo "## 📦 Docker Images Build Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Build Status" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Image | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| default | ${{ needs.build-default.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| cangjie | ${{ needs.build-cangjie.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Image Tags" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- \`${{ env.REGISTRY }}/${{ github.repository_owner }}/default:${{ env.TAG }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- \`${{ env.REGISTRY }}/${{ github.repository_owner }}/cangjie:${{ env.TAG }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Architectures" >> $GITHUB_STEP_SUMMARY
-          echo "- linux/amd64 (x86_64)" >> $GITHUB_STEP_SUMMARY
-          echo "- linux/arm64 (aarch64)" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Trigger" >> $GITHUB_STEP_SUMMARY
-          echo "- Tag: \`${{ env.TAG }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- Run ID: \`${{ github.run_id }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- Workflow: \`${{ github.workflow }}\`" >> $GITHUB_STEP_SUMMARY
-          
-          # Exit with error if any job failed
-          if [ "${{ needs.build-default.result }}" == "failure" ] || [ "${{ needs.build-cangjie.result }}" == "failure" ]; then
+          BASE="${{ needs.build-base.result }}"
+          DOWN="${{ needs.build-images.result }}"
+
+          icon() { [[ "$1" == "success" ]] && echo "✅" || ([[ "$1" == "skipped" ]] && echo "⏭️" || echo "❌"); }
+
+          {
+            echo "## 📦 DGen Build Pipeline Summary"
             echo ""
-            echo "❌ One or more builds failed!"
+            echo "| Job | Status |"
+            echo "|-----|--------|"
+            echo "| default | $(icon $BASE) \`${BASE}\` |"
+            echo "| cangjie / vite | $(icon $DOWN) \`${DOWN}\` |"
+            echo ""
+            echo "**Registry:** \`${{ env.REGISTRY }}/${{ github.repository_owner }}/\`"
+            echo "**Tag:** \`${{ env.IMAGE_TAG }}\`"
+            echo "**Platforms:** \`linux/amd64\` · \`linux/arm64\`"
+            echo "**Run:** [\`#${{ github.run_number }}\`](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # Fail pipeline if any build failed
+          if [[ "$BASE" == "failure" || "$DOWN" == "failure" ]]; then
+            echo "❌ One or more builds failed!" >&2
             exit 1
           fi
