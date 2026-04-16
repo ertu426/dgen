@@ -47,6 +47,7 @@ WORKDIR /tmp/cangjie-install
 RUN mkdir -p /home/dev/cangjie /home/dev/cangjie_sdkx /tmp/cangjie-vscode && \
     tar -xzf /tmp/cangjie/sdk.tar.gz -C /home/dev/cangjie --strip-components=1 && \
     unzip -q /tmp/cangjie/sdkx.zip -d /home/dev/cangjie_sdkx && \
+    chown -R dev:dev /home/dev/cangjie /home/dev/cangjie_sdkx && \
     rm -rf /tmp/cangjie /tmp/cangjie-install
 
 
