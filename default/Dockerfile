@@ -56,6 +56,7 @@ RUN apt-get update && \
         build-essential \
         bat \
         eza \
+        zoxide \
         locales \
     && echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
     echo "zh_CN.UTF-8 UTF-8" >> /etc/locale.gen && \
