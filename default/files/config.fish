@@ -72,3 +72,11 @@ alias glg "git log --graph --pretty=format:'%C(bold)%h%Creset -%C(yellow)%d%Cres
 if type -q starship
     starship init fish | source
 end
+
+# =============================================================================
+# zoxide Prompt Configuration
+# =============================================================================
+# zoxide init fish | source
+if type -q zoxide
+  zoxide init fish | source
+end
