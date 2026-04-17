@@ -1,261 +1,98 @@
-# =============================================================================
-# build-images.yml — Docker Image CI/CD Pipeline
-# =============================================================================
-# Flow:
-#   [build-base] default
-#       └── [build-images] cangjie / vite  (matrix, concurrent)
-#               └── [summary]
-#
-# Features:
-#   - Matrix strategy to eliminate duplicate Job definitions
-#   - GHCR registry cache (no /tmp cache hacks)
-#   - Multi-arch: linux/amd64, linux/arm64
-#   - Path-based selective trigger
-#   - OCI annotations + SBOM + Provenance
-# =============================================================================
-
-name: Build and Push Docker Images
+name: Build Multi-Arch Docker Images
 
 on:
-  schedule:
-    - cron: '0 14 * * *'   # 22:00 CST = 14:00 UTC
-
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Image tag  (default: latest)'
-        required: false
-        default: 'latest'
-        type: string
-      images:
-        description: 'Images to build  (all | default | downstream)'
-        required: false
-        default: 'all'
-        type: choice
-        options:
-          - all
-          - default
-          - downstream
-
   push:
-    branches: [main]
-    paths:
-      - 'default/**'
-      - 'cangjie/**'
-      - 'vite/**'
-      - '.github/workflows/build-images.yml'
+    branches: [ "main", "master" ]
+    tags: [ 'v*' ]
+  # 定时任务：每天 UTC 0:30 (北京时间 8:30) 执行
+  schedule:
+    - cron: '30 0 * * *'
 
-# ── Global env ───────────────────────────────────────────────────────────────
 env:
   REGISTRY: ghcr.io
-  IMAGE_TAG: ${{ github.event.inputs.tag || 'latest' }}
-  PLATFORMS: linux/amd64,linux/arm64
+  IMAGE_NAME: ${{ github.repository }}
 
-# ── Shared permissions ────────────────────────────────────────────────────────
-permissions:
-  contents: read
-  packages: write
-  attestations: write
-  id-token: write
-
-# =============================================================================
-# Job 1 — Build base image (default)  [must finish before downstream jobs]
-# =============================================================================
 jobs:
-  build-base:
-    name: 'Build: default'
+  # ==========================================
+  # Job 1: 优先编译 default 目录
+  # ==========================================
+  build-default:
+    name: Build Base (default)
     runs-on: ubuntu-latest
-    if: ${{ github.event.inputs.images != 'downstream' }}
-
-    outputs:
-      image: ${{ steps.meta.outputs.tags }}
-      digest: ${{ steps.build.outputs.digest }}
-
+    permissions:
+      contents: read
+      packages: write
+    
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v6
 
-      - uses: docker/login-action@v3
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: docker/setup-qemu-action@v3
-        with:
-          platforms: ${{ env.PLATFORMS }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
 
-      - uses: docker/setup-buildx-action@v3
-
-      - name: Generate image metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/default
-          tags: |
-            type=raw,value=${{ env.IMAGE_TAG }}
-            type=raw,value=build-${{ github.run_number }}
-            type=sha,prefix=sha-,format=short
-
-      - name: Build and push  [default]
-        id: build
-        uses: docker/build-push-action@v6
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v7
         with:
           context: ./default
+          file: ./default/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          # 因为去掉了 PR 触发，这里只要触发就会直接 push
           push: true
-          platforms: ${{ env.PLATFORMS }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ github.repository_owner }}/default:buildcache
-          cache-to:   type=registry,ref=${{ env.REGISTRY }}/${{ github.repository_owner }}/default:buildcache,mode=max
-          build-args: BUILDKIT_INLINE_CACHE=1
-          annotations: |
-            org.opencontainers.image.title=DGen Default Development Environment
-            org.opencontainers.image.title.zh=DGen 通用开发环境
-            org.opencontainers.image.description=Comprehensive dev container with Code Server, Fish shell & modern CLI tools. SSH / VS Code Dev Containers ready.
-            org.opencontainers.image.description.zh=全栈开发容器，预装 Code Server、Fish Shell 和现代化 CLI 工具，开箱即用支持 SSH 远程连接和 VS Code Dev Containers。
-            org.opencontainers.image.base.name=debian:trixie-slim
-          provenance: true
-          sbom: true
+          outputs: type=image,name=target,annotation-index.org.opencontainers.image.description=Default programming environment
+          tags: ghcr.io/${{ github.repository_owner }}/${{ matrix.image_name }}:${{ matrix.tag }},ghcr.io/${{ github.repository_owner }}/${{ matrix.image_name }}:${{ github.run_id }}
 
-      - name: Build summary
-        if: always()
-        run: |
-          STATUS=${{ job.status }}
-          ICON=$([[ "$STATUS" == "success" ]] && echo "✅" || echo "❌")
-          {
-            echo "## ${ICON} default — ${STATUS}"
-            echo "| | |"
-            echo "|---|---|"
-            echo "| **Image** | \`${{ env.REGISTRY }}/${{ github.repository_owner }}/default:${{ env.IMAGE_TAG }}\` |"
-            echo "| **Digest** | \`${{ steps.build.outputs.digest }}\` |"
-            echo "| **Platforms** | \`linux/amd64\` · \`linux/arm64\` |"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-# =============================================================================
-# Job 2 — Build downstream images (matrix, concurrent)
-# =============================================================================
-  build-images:
-    name: 'Build: ${{ matrix.image }}'
+  # ==========================================
+  # Job 2: 并行编译其他目录
+  # ==========================================
+  build-others:
+    name: Build (${{ matrix.name }})
     runs-on: ubuntu-latest
-    needs: build-base
-    if: |
-      always() &&
-      needs.build-base.result != 'failure' &&
-      github.event.inputs.images != 'default'
-
+    needs: build-default
+    permissions:
+      contents: read
+      packages: write
+    
     strategy:
-      fail-fast: false
       matrix:
         include:
-          - image: cangjie
-            context: ./cangjie
-            title_en: 'DGen Cangjie Development Environment'
-            title_zh: 'DGen 仓颉开发环境'
-            desc_en: 'Cangjie language dev container with SDK, stdx & uv Python manager. Multi-arch: x86_64 / ARM64.'
-            desc_zh: '仓颉编程语言开发容器，预装 SDK、标准库及 uv Python 管理工具，支持 x86_64 和 ARM64 架构。'
-            base: ${{ format('{0}/{1}/default:latest', 'ghcr.io', github.repository_owner) }}
+          - name: "cangjie"        
+            tag: "latest"
+            description: "Cangjie Programming Environment"
+            
+          - name: "vite"        
+            tag: "latest"
+            description: "VitePlus Programming Environment"
 
-          - image: vite
-            context: ./vite
-            title_en: 'DGen Vite Development Environment'
-            title_zh: 'DGen Vite 开发环境'
-            desc_en: 'Vite-based front-end dev container extending the default image. Ships with Node.js and Vite toolchain.'
-            desc_zh: '基于 default 镜像的 Vite 前端开发容器，内置 Node.js 和 Vite 工具链。'
-            base: ${{ format('{0}/{1}/default:latest', 'ghcr.io', github.repository_owner) }}
-
+      fail-fast: false 
+    
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v6
 
-      - uses: docker/login-action@v3
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: docker/setup-qemu-action@v3
-        with:
-          platforms: ${{ env.PLATFORMS }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
 
-      - uses: docker/setup-buildx-action@v3
-
-      - name: Generate image metadata
-        id: meta
-        uses: docker/metadata-action@v5
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v7
         with:
-          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.image }}
-          tags: |
-            type=raw,value=${{ env.IMAGE_TAG }}
-            type=raw,value=build-${{ github.run_number }}
-            type=sha,prefix=sha-,format=short
-
-      - name: Build and push  [${{ matrix.image }}]
-        id: build
-        uses: docker/build-push-action@v6
-        with:
-          context: ${{ matrix.context }}
+          context: ./${{ matrix.name }}
+          file: ./${{ matrix.name }}/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          # 因为去掉了 PR 触发，这里只要触发就会直接 push
           push: true
-          platforms: ${{ env.PLATFORMS }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.image }}:buildcache
-          cache-to:   type=registry,ref=${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.image }}:buildcache,mode=max
-          build-args: BUILDKIT_INLINE_CACHE=1
-          annotations: |
-            org.opencontainers.image.title=${{ matrix.title_en }}
-            org.opencontainers.image.title.zh=${{ matrix.title_zh }}
-            org.opencontainers.image.description=${{ matrix.desc_en }}
-            org.opencontainers.image.description.zh=${{ matrix.desc_zh }}
-            org.opencontainers.image.base.name=${{ matrix.base }}
-          provenance: true
-          sbom: true
-
-      - name: Build summary
-        if: always()
-        run: |
-          STATUS=${{ job.status }}
-          ICON=$([[ "$STATUS" == "success" ]] && echo "✅" || echo "❌")
-          {
-            echo "## ${ICON} ${{ matrix.image }} — ${STATUS}"
-            echo "| | |"
-            echo "|---|---|"
-            echo "| **Image** | \`${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.image }}:${{ env.IMAGE_TAG }}\` |"
-            echo "| **Digest** | \`${{ steps.build.outputs.digest }}\` |"
-            echo "| **Platforms** | \`linux/amd64\` · \`linux/arm64\` |"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-# =============================================================================
-# Job 3 — Final summary
-# =============================================================================
-  summary:
-    name: 'Pipeline Summary'
-    runs-on: ubuntu-latest
-    if: always()
-    needs: [build-base, build-images]
-
-    steps:
-      - name: Final summary
-        run: |
-          BASE="${{ needs.build-base.result }}"
-          DOWN="${{ needs.build-images.result }}"
-
-          icon() { [[ "$1" == "success" ]] && echo "✅" || ([[ "$1" == "skipped" ]] && echo "⏭️" || echo "❌"); }
-
-          {
-            echo "## 📦 DGen Build Pipeline Summary"
-            echo ""
-            echo "| Job | Status |"
-            echo "|-----|--------|"
-            echo "| default | $(icon $BASE) \`${BASE}\` |"
-            echo "| cangjie / vite | $(icon $DOWN) \`${DOWN}\` |"
-            echo ""
-            echo "**Registry:** \`${{ env.REGISTRY }}/${{ github.repository_owner }}/\`"
-            echo "**Tag:** \`${{ env.IMAGE_TAG }}\`"
-            echo "**Platforms:** \`linux/amd64\` · \`linux/arm64\`"
-            echo "**Run:** [\`#${{ github.run_number }}\`](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-          # Fail pipeline if any build failed
-          if [[ "$BASE" == "failure" || "$DOWN" == "failure" ]]; then
-            echo "❌ One or more builds failed!" >&2
-            exit 1
-          fi
+          outputs: type=image,name=target,annotation-index.org.opencontainers.image.description=${{ matrix.description }}
+          tags: ghcr.io/${{ github.repository_owner }}/${{ matrix.image_name }}:${{ matrix.tag }},ghcr.io/${{ github.repository_owner }}/${{ matrix.image_name }}:${{ github.run_id }}
