@@ -4,7 +4,6 @@ on:
   push:
     branches: [ "main", "master" ]
     tags: [ 'v*' ]
-  # 定时任务：每天 UTC 0:30 (北京时间 8:30) 执行
   schedule:
     - cron: '30 0 * * *'
 
@@ -13,9 +12,6 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  # ==========================================
-  # Job 1: 优先编译 default 目录
-  # ==========================================
   build-default:
     name: Build Base (default)
     runs-on: ubuntu-latest
@@ -37,20 +33,31 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
+      - name: Docker Buildx Cache
+        uses: actions/cache@v5
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-default-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-default-
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v7
         with:
           context: ./default
           file: ./default/Dockerfile
           platforms: linux/amd64,linux/arm64
-          # 因为去掉了 PR 触发，这里只要触发就会直接 push
           push: true
           outputs: type=image,name=target,annotation-index.org.opencontainers.image.description=Default programming environment
           tags: ghcr.io/${{ github.repository_owner }}/default:latest,ghcr.io/${{ github.repository_owner }}/default:${{ github.run_id }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
 
-  # ==========================================
-  # Job 2: 并行编译其他目录
-  # ==========================================
+      - name: Move cache to prevent unbounded growth
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
   build-others:
     name: Build ${{ matrix.name }}
     runs-on: ubuntu-latest
@@ -65,11 +72,9 @@ jobs:
           - name: "cangjie"        
             tag: "latest"
             description: "Cangjie Programming Environment"
-            
           - name: "vite"        
             tag: "latest"
             description: "VitePlus Programming Environment"
-
       fail-fast: false 
     
     steps:
@@ -79,12 +84,20 @@ jobs:
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v4
         with:
-          registry: ghcr.io
+          registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
+
+      - name: Docker Buildx Cache
+        uses: actions/cache@v5
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ matrix.name }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-${{ matrix.name }}-
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v7
@@ -92,7 +105,13 @@ jobs:
           context: ./${{ matrix.name }}
           file: ./${{ matrix.name }}/Dockerfile
           platforms: linux/amd64,linux/arm64
-          # 因为去掉了 PR 触发，这里只要触发就会直接 push
           push: true
           outputs: type=image,name=target,annotation-index.org.opencontainers.image.description=${{ matrix.description }}
           tags: ghcr.io/${{ github.repository_owner }}/${{ matrix.name }}:${{ matrix.tag }},ghcr.io/${{ github.repository_owner }}/${{ matrix.name }}:${{ github.run_id }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+
+      - name: Move cache to prevent unbounded growth
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
