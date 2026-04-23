@@ -15,7 +15,7 @@ set -eu  # 遇到错误立即退出，禁止使用未定义变量
 # 🟢 配置区（可通过环境变量覆盖）
 # ==========================================
 SDK_DIR="${SDK_DIR:-$HOME/cangjie}"
-STDX_DIR="${STDX_DIR:-$HOME/cangjie_sdkx}"
+STDX_DIR="${STDX_DIR:-$HOME/cangjie_stdx}"
 WORKSPACE_DIR="${WORKSPACE_DIR:-/home/dev/workspace}"
 
 # 下载地址
@@ -112,13 +112,13 @@ main() {
     cd "$TEMP_DIR"
 
     download_file "$SDK_URL"          "sdk.tar.gz"   "仓颉 SDK"     || exit 1
-    download_file "$STDX_URL"         "sdkx.zip"     "仓颉标准库"   || exit 1
+    download_file "$STDX_URL"         "stdx.zip"     "仓颉标准库"   || exit 1
     download_file "$VSCODE_PLUGIN_URI" "vscode.tar.gz" "VSCode 插件" || \
         print_warning "VSCode 插件下载失败，可跳过手动处理"
 
     # ── 5. 解压 ──────────────────────────────────────────────────────────────
     extract_file "sdk.tar.gz"  "$SDK_DIR"       "仓颉 SDK"   || exit 1
-    extract_file "sdkx.zip"    "$STDX_DIR"      "仓颉标准库" || exit 1
+    extract_file "stdx.zip"    "$STDX_DIR"      "仓颉标准库" || exit 1
     if [ -f "vscode.tar.gz" ]; then
         extract_file "vscode.tar.gz" "$WORKSPACE_DIR" "VSCode 插件" || \
             print_warning "VSCode 插件解压失败，可手动处理"
