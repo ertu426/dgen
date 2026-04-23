@@ -15,15 +15,15 @@ set -eu  # 遇到错误立即退出，禁止使用未定义变量
 # 🟢 配置区（可通过环境变量覆盖）
 # ==========================================
 SDK_DIR="${SDK_DIR:-$HOME/cangjie}"
-SDKX_DIR="${SDKX_DIR:-$HOME/cangjie_sdkx}"
+STDX_DIR="${STDX_DIR:-$HOME/cangjie_sdkx}"
 WORKSPACE_DIR="${WORKSPACE_DIR:-/home/dev/workspace}"
 
 # 下载地址
 VSCODE_PLUGIN_URI="https://cangjie-lang.cn/v1/files/auth/downLoad?nsId=142267&fileName=cangjie-vscode-1.1.0-beta.25.tar.gz&objectKey=69cb70e16e8ed61e6e07fd3e"
 SDK_AMD64_URI="https://cangjie-lang.cn/v1/files/auth/downLoad?nsId=142267&fileName=cangjie-sdk-linux-x64-1.1.0-beta.25.tar.gz&objectKey=69cb718e6e8ed61e6e07fd42"
-SDKX_AMD64_URI="https://gitcode.com/Cangjie/cangjie_stdx/releases/download/v1.1.0-beta.25/cangjie-stdx-linux-x64-1.1.0-beta.25.1.zip"
+STDX_AMD64_URI="https://gitcode.com/Cangjie/cangjie_stdx/releases/download/v1.1.0-beta.25/cangjie-stdx-linux-x64-1.1.0-beta.25.1.zip"
 SDK_ARM64_URI="https://cangjie-lang.cn/v1/files/auth/downLoad?nsId=142267&fileName=cangjie-sdk-linux-aarch64-1.1.0-beta.25.tar.gz&objectKey=69cb74a76e8ed61e6e07fd45"
-SDKX_ARM64_URI="https://gitcode.com/Cangjie/cangjie_stdx/releases/download/v1.1.0-beta.25/cangjie-stdx-linux-aarch64-1.1.0-beta.25.1.zip"
+STDX_ARM64_URI="https://gitcode.com/Cangjie/cangjie_stdx/releases/download/v1.1.0-beta.25/cangjie-stdx-linux-aarch64-1.1.0-beta.25.1.zip"
 
 # ==========================================
 # 📦 引入公共工具库
@@ -45,16 +45,16 @@ configure_environment() {
         # Fish 不支持 compdef，故省略 zsh 补全配置
         _block="# 仓颉 SDK
 set -gx CANGJIE_HOME \"${SDK_DIR}\"
-set -gx CANGJIE_SDKX_HOME \"${SDKX_DIR}\"
+set -gx CANGJIE_STDX_HOME \"${STDX_DIR}\"
 set -gx PATH \$CANGJIE_HOME/bin \$CANGJIE_HOME/tools/bin \$PATH \$HOME/.cjpm/bin
-set -gx LD_LIBRARY_PATH \$PYTHON_LIB \$CANGJIE_HOME/runtime/lib/linux_${_hw_arch}_cjnative \$CANGJIE_HOME/tools/lib \$CANGJIE_SDKX_HOME/linux_${_hw_arch}_cjnative/static/stdx \$LD_LIBRARY_PATH"
+set -gx LD_LIBRARY_PATH \$PYTHON_LIB \$CANGJIE_HOME/runtime/lib/linux_${_hw_arch}_cjnative \$CANGJIE_HOME/tools/lib \$CANGJIE_STDX_HOME/linux_${_hw_arch}_cjnative/static/stdx \$LD_LIBRARY_PATH"
     else
         # ── POSIX sh / Bash / Zsh 语法 ─────────────────────────────────────────
         _block="# 仓颉 SDK
 export CANGJIE_HOME=\"${SDK_DIR}\"
-export CANGJIE_SDKX_HOME=\"${SDKX_DIR}\"
+export CANGJIE_STDX_HOME=\"${STDX_DIR}\"
 export PATH=\"\${CANGJIE_HOME}/bin:\${CANGJIE_HOME}/tools/bin:\$PATH:\$HOME/.cjpm/bin\"
-export LD_LIBRARY_PATH=\"\${PYTHON_LIB:+\$PYTHON_LIB:}\${CANGJIE_HOME}/runtime/lib/linux_${_hw_arch}_cjnative:\${CANGJIE_HOME}/tools/lib:\${CANGJIE_SDKX_HOME}/linux_${_hw_arch}_cjnative/static/stdx\${LD_LIBRARY_PATH:+:\$LD_LIBRARY_PATH}\""
+export LD_LIBRARY_PATH=\"\${PYTHON_LIB:+\$PYTHON_LIB:}\${CANGJIE_HOME}/runtime/lib/linux_${_hw_arch}_cjnative:\${CANGJIE_HOME}/tools/lib:\${CANGJIE_STDX_HOME}/linux_${_hw_arch}_cjnative/static/stdx\${LD_LIBRARY_PATH:+:\$LD_LIBRARY_PATH}\""
 
         # Zsh 下追加 compdef 补全（仅 zsh）
         case "$(basename "${SHELL:-sh}")" in
@@ -82,11 +82,11 @@ main() {
     case "$ARCH" in
         x86_64)
             SDK_URL="$SDK_AMD64_URI"
-            SDKX_URL="$SDKX_AMD64_URI"
+            STDX_URL="$STDX_AMD64_URI"
             ;;
         aarch64)
             SDK_URL="$SDK_ARM64_URI"
-            SDKX_URL="$SDKX_ARM64_URI"
+            STDX_URL="$STDX_ARM64_URI"
             ;;
         *)
             print_error "无法为架构 '$ARCH' 匹配下载链接"
@@ -97,12 +97,12 @@ main() {
     print_info "安装配置："
     printf "  %-20s %s\n" "系统架构："     "$ARCH"
     printf "  %-20s %s\n" "SDK 路径："     "$SDK_DIR"
-    printf "  %-20s %s\n" "标准库路径："   "$SDKX_DIR"
+    printf "  %-20s %s\n" "标准库路径："   "$STDX_DIR"
     printf "  %-20s %s\n" "工作区路径："   "$WORKSPACE_DIR"
     printf "\n"
 
     # ── 3. 创建目录 ─────────────────────────────────────────────────────────
-    mkdir -p "$SDK_DIR" "$SDKX_DIR" "$WORKSPACE_DIR"
+    mkdir -p "$SDK_DIR" "$STDX_DIR" "$WORKSPACE_DIR"
 
     # ── 4. 下载到临时目录 ────────────────────────────────────────────────────
     TEMP_DIR="$(mktemp -d)"
@@ -112,13 +112,13 @@ main() {
     cd "$TEMP_DIR"
 
     download_file "$SDK_URL"          "sdk.tar.gz"   "仓颉 SDK"     || exit 1
-    download_file "$SDKX_URL"         "sdkx.zip"     "仓颉标准库"   || exit 1
+    download_file "$STDX_URL"         "sdkx.zip"     "仓颉标准库"   || exit 1
     download_file "$VSCODE_PLUGIN_URI" "vscode.tar.gz" "VSCode 插件" || \
         print_warning "VSCode 插件下载失败，可跳过手动处理"
 
     # ── 5. 解压 ──────────────────────────────────────────────────────────────
     extract_file "sdk.tar.gz"  "$SDK_DIR"       "仓颉 SDK"   || exit 1
-    extract_file "sdkx.zip"    "$SDKX_DIR"      "仓颉标准库" || exit 1
+    extract_file "sdkx.zip"    "$STDX_DIR"      "仓颉标准库" || exit 1
     if [ -f "vscode.tar.gz" ]; then
         extract_file "vscode.tar.gz" "$WORKSPACE_DIR" "VSCode 插件" || \
             print_warning "VSCode 插件解压失败，可手动处理"
@@ -146,7 +146,7 @@ main() {
     printf "  3. 如需 VSCode 插件，参考 %s 目录下的文件\n" "$WORKSPACE_DIR"
     printf "\n"
     printf "💡 卸载提示：删除 %s、%s 并清理 %s 中的 CANGJIE_ENV 配置块\n" \
-        "$SDK_DIR" "$SDKX_DIR" "$_rc"
+        "$SDK_DIR" "$STDX_DIR" "$_rc"
     printf "\n"
 }
 
