@@ -16,40 +16,9 @@ LABEL org.opencontainers.image.description.zh="仓颉编程语言开发容器，
 LABEL org.opencontainers.image.source="https://github.com/ertu426/dgen"
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.created="2024-01-01T00:00:00Z"
-LABEL org.opencontainers.image.version="1.0.1"
+LABEL org.opencontainers.image.version="1.0.2"
 LABEL org.opencontainers.image.vendor="DGen"
 LABEL org.opencontainers.image.base.name="ghcr.io/ertu426/default"
-
-# =============================================================================
-# Download Cangjie SDK (x86_64)
-# =============================================================================
-WORKDIR /tmp/cangjie
-RUN ARCH="$(dpkg --print-architecture)" && \
-    case "$ARCH" in \
-        amd64) \
-            SDK_URL="https://cangjie-lang.cn/v1/files/auth/downLoad?nsId=142267&fileName=cangjie-sdk-linux-x64-1.1.0-beta.25.tar.gz&objectKey=69cb718e6e8ed61e6e07fd42" && \
-            STDX_URL="https://gitcode.com/Cangjie/cangjie_stdx/releases/download/v1.1.0-beta.25/cangjie-stdx-linux-x64-1.1.0-beta.25.1.zip" ;; \
-        arm64) \
-            SDK_URL="https://cangjie-lang.cn/v1/files/auth/downLoad?nsId=142267&fileName=cangjie-sdk-linux-aarch64-1.1.0-beta.25.tar.gz&objectKey=69cb74a76e8ed61e6e07fd45" && \
-            STDX_URL="https://gitcode.com/Cangjie/cangjie_stdx/releases/download/v1.1.0-beta.25/cangjie-stdx-linux-aarch64-1.1.0-beta.25.1.zip" ;; \
-        *) echo "Unsupported architecture: $ARCH" && exit 1 ;; \
-    esac && \
-    curl -L --fail --show-error -o sdk.tar.gz "$SDK_URL" && \
-    curl -L --fail --show-error -o stdx.zip "$STDX_URL"
-
-WORKDIR /tmp
-RUN curl -L --fail --show-error -o cangjie-vscode.tar.gz "https://cangjie-lang.cn/v1/files/auth/downLoad?nsId=142267&fileName=cangjie-vscode-1.1.0-beta.25.tar.gz&objectKey=69cb70e16e8ed61e6e07fd3e"
-
-# =============================================================================
-# Build Stage: Extract and Prepare Cangjie SDK
-# =============================================================================
-WORKDIR /tmp/cangjie-install
-RUN mkdir -p /home/dev/cangjie /home/dev/cangjie_stdx /tmp/cangjie-vscode && \
-    tar -xzf /tmp/cangjie/sdk.tar.gz -C /home/dev/cangjie --strip-components=1 && \
-    unzip -q /tmp/cangjie/stdx.zip -d /home/dev/cangjie_stdx && \
-    chown -R dev:dev /home/dev/cangjie /home/dev/cangjie_stdx && \
-    rm -rf /tmp/cangjie /tmp/cangjie-install
-
 
 # =============================================================================
 # Runtime Stage
@@ -61,7 +30,8 @@ RUN apt-get update && \
       libc-dev \
       libc++-dev \
       libgcc-14-dev \
-      build-essential && \
+      build-essential \
+      file && \
     apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/*
 
@@ -76,31 +46,60 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
     /home/dev/.local/bin/uv python install 3.11
 ENV PATH="/root/.local/bin:$PATH"
 
+# =============================================================================
+# Install Cangjie SDK * Cangjie STDX
+# =============================================================================
+WORKDIR /home/dev
+
+# Download Cangjie SDK and extract it
+RUN ARCH="$(dpkg --print-architecture)" && \
+    case "$ARCH" in \
+        amd64) SDK_URL="https://cangjie-lang.cn/v1/files/auth/downLoad?nsId=142267&fileName=cangjie-sdk-linux-x64-1.1.0.tar.gz&objectKey=69e9d50c21f5a8178d6fd219" ;; \
+        arm64) SDK_URL="https://cangjie-lang.cn/v1/files/auth/downLoad?nsId=142267&fileName=cangjie-sdk-linux-aarch64-1.1.0.tar.gz&objectKey=69e9d37021f5a8178d6fd216" ;; \
+        *) echo "Unsupported architecture: $ARCH" && exit 1 ;; \
+    esac && \
+    curl -fSL "$SDK_URL" | tar -xz
+
+# Download Cangjie STDX
+RUN bash -c "$(curl -fsSL https://raw.gitcode.com/Cangjie/cangjie_stdx/raw/dev/downloader.sh)" -- 1.1.0.1 && \
+    mv cangjie-stdx* cangjie_stdx
+
+WORKDIR /tmp
+RUN curl -L --fail --show-error -o cangjie-vscode.tar.gz "https://cangjie-lang.cn/v1/files/auth/downLoad?nsId=142267&fileName=cangjie-vscode-1.1.0.tar.gz&objectKey=69e9d55021f5a8178d6fd21a"
+
+# =============================================================================
 # Configure Cangjie environment in fish
+# =============================================================================
 RUN mkdir -p ~/.config/fish && \
     echo '' >> ~/.config/fish/config.fish && \
     echo '# 仓颉 SDK (Cangjie SDK)' >> ~/.config/fish/config.fish && \
     echo 'set -gx CANGJIE_HOME /home/dev/cangjie' >> ~/.config/fish/config.fish && \
     echo 'set -gx CANGJIE_STDX_HOME /home/dev/cangjie_stdx' >> ~/.config/fish/config.fish && \
     echo 'set -gx PATH $CANGJIE_HOME/bin $CANGJIE_HOME/tools/bin $HOME/.cjpm/bin $HOME/.local/bin $HOME/.cargo/bin $PATH' >> ~/.config/fish/config.fish && \
-    echo 'set -gx LD_LIBRARY_PATH $CANGJIE_HOME/runtime/lib/linux_x86_64_cjnative $CANGJIE_HOME/tools/lib $CANGJIE_STDX_HOME/linux_x86_64_cjnative/static/stdx /home/dev/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib $LD_LIBRARY_PATH' >> ~/.config/fish/config.fish
+    echo 'set -gx LD_LIBRARY_PATH $CANGJIE_HOME/runtime/lib/linux_x86_64_cjnative $CANGJIE_HOME/tools/lib $CANGJIE_STDX_HOME/static/stdx /home/dev/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib $LD_LIBRARY_PATH' >> ~/.config/fish/config.fish
 
-# Configure uv + Python environment
+# =============================================================================
+# Configure uv + Python environment in fish
+# =============================================================================
 RUN echo '' >> ~/.config/fish/config.fish && \
     echo '# uv + Python (Python Package Manager)' >> ~/.config/fish/config.fish && \
     echo 'set -gx PATH $HOME/.local/bin $HOME/.cargo/bin $PATH' >> ~/.config/fish/config.fish && \
     echo 'uv generate-shell-completion fish | source' >> ~/.config/fish/config.fish
 
-# PATH
-ENV PATH=/home/dev/cangjie/bin:/home/dev/cangjie/tools/bin:/home/dev/.local/bin:/home/dev/.cargo/bin:/home/dev/.cjpm/bin:$PATH
+# =============================================================================
+# PATH environment
+# =============================================================================
 ENV CANGJIE_HOME=/home/dev/cangjie
 ENV CANGJIE_STDX_HOME=/home/dev/cangjie_stdx
+ENV PATH=$CANGJIE_HOME/bin:$CANGJIE_HOME/tools/bin:/home/dev/.local/bin:/home/dev/.cargo/bin:/home/dev/.cjpm/bin:$PATH
+ENV LD_LIBRARY_PATH=$CANGJIE_HOME/runtime/lib/linux_x86_64_cjnative:$CANGJIE_HOME/tools/lib:$CANGJIE_STDX_HOME/static/stdx:/home/dev/.local/share/uv/python/cpython-3.11.15-linux-x86_64-gnu/lib
 
-# Working directory
+# =============================================================================
+# Working directory environment
+# =============================================================================
 WORKDIR /home/dev/workspace
-RUN tar -xzf /tmp/cangjie-vscode.tar.gz -C /home/dev/workspace --strip-components=1
-
-USER root
+RUN curl -L --fail --show-error -o cangjie-vscode.tar.gz "https://cangjie-lang.cn/v1/files/auth/downLoad?nsId=142267&fileName=cangjie-vscode-1.1.0.tar.gz&objectKey=69e9d55021f5a8178d6fd21a" && \
+    tar -xzf cangjie-vscode.tar.gz -C /home/dev/workspace --strip-components=1
 
 EXPOSE 8080 2222
 

@@ -29,7 +29,7 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         ca-certificates \
         curl  && \
-    sed -i 's/http/https/g' /etc/apt/sources.list.d/debian.sources && \
+    sed -i 's/http:\/\/deb.debian.org/https:\/\/mirrors.ustc.edu.cn/g' /etc/apt/sources.list.d/debian.sources && \
     rm -rf /var/lib/apt/lists/*
 
 # Environment variables for non-interactive installation
@@ -104,7 +104,7 @@ RUN mkdir -p /home/dev/.config/code-server && \
 COPY --chown=dev:dev files/starship.toml /home/dev/.config/starship.toml
 COPY --chown=dev:dev files/config.fish /home/dev/.config/fish/config.fish
 COPY --chown=dev:dev files/config.yaml /home/dev/.config/code-server/config.yaml
-COPY --chown=dev:dev files/start.sh /start.sh
+COPY files/start.sh /start.sh
 
 # Git configuration with Delta pager
 USER dev
