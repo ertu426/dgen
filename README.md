@@ -2,22 +2,58 @@
 
 English | [中文](README_zh.md)
 
-> Production-ready Docker development containers based on **Debian 13 (Trixie)**, with Code Server, Fish Shell, SSH, and multi-arch support. Built for daily development via browser, SSH, or VS Code Dev Containers.
+[![Build Images](https://github.com/ertu426/dgen/actions/workflows/build-images.yml/badge.svg)](https://github.com/ertu426/dgen/actions/workflows/build-images.yml)
+[![Test & PR](https://github.com/ertu426/dgen/actions/workflows/test-and-pr.yml/badge.svg)](https://github.com/ertu426/dgen/actions/workflows/test-and-pr.yml)
+
+> Production-ready Docker development containers based on **Debian 13 (Trixie)** with multi-arch support (amd64/arm64).
 
 ---
 
 ## Available Images
 
-| Image | Based On | Description |
-|-------|----------|-------------|
-| [`default`][ghcr-default] | `debian:trixie-slim` | Universal dev environment with Code Server, Fish, and modern CLI tools |
-| [`cangjie`][ghcr-cangjie] | `default` | [Cangjie language][cangjie-lang] SDK + stdx + uv / Python 3.11 |
-| [`vite`][ghcr-vite] | `default` | Node.js / Vite / Nuxt frontend environment |
+### Image Matrix
+
+```
+ghcr.io/ertu426/default
+├── base
+├── ide
+├── ssh
+└── ide-ssh
+
+ghcr.io/ertu426/cangjie
+├── base
+├── ide
+├── ssh
+├── ide-ssh
+└── builder
+
+ghcr.io/ertu426/vite
+├── base
+├── ide
+├── ssh
+└── ide-ssh
+```
+
+| Image | Description |
+|-------|-------------|
+| **default** | Universal dev environment (Debian 13 + Fish + Neovim + CLI tools) |
+| **cangjie** | [Cangjie language][cangjie-lang] development (SDK 1.1.0 + stdx 1.1.0) |
+| **vite** | Node.js / Vite / Nuxt frontend development |
 
 [ghcr-default]: https://ghcr.io/ertu426/default
 [ghcr-cangjie]: https://ghcr.io/ertu426/cangjie
 [ghcr-vite]: https://ghcr.io/ertu426/vite
 [cangjie-lang]: https://cangjie-lang.cn
+
+### Tag Variants
+
+| Tag | Features | Use Case |
+|-----|----------|----------|
+| `base` | Minimal environment | Container-only development |
+| `ide` | + Code Server | Browser-based IDE |
+| `ssh` | + SSH server | Remote SSH development |
+| `ide-ssh` | + Code Server + SSH | Both access methods |
+| `builder` (cangjie only) | Build-only environment | CI/CD pipelines |
 
 ---
 
@@ -27,175 +63,171 @@ English | [中文](README_zh.md)
 
 - Docker 24+ or Docker Desktop
 - Docker Compose v2.0+
-- _(Optional)_ VS Code + [Dev Containers extension][devcontainers-ext]
 
-[devcontainers-ext]: https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers
-
-### Pull & Run
+### Pull Images
 
 ```bash
-# Pull pre-built images from GHCR
-docker pull ghcr.io/ertu426/default:latest
-docker pull ghcr.io/ertu426/cangjie:latest
-docker pull ghcr.io/ertu426/vite:latest
-```
+# Pull all default variants
+docker pull ghcr.io/ertu426/default:base
+docker pull ghcr.io/ertu426/default:ide
+docker pull ghcr.io/ertu426/default:ssh
+docker pull ghcr.io/ertu426/default:ide-ssh
 
-### Run with Docker Compose
+# Pull cangjie variants
+docker pull ghcr.io/ertu426/cangjie:base
+docker pull ghcr.io/ertu426/cangjie:ide
+docker pull ghcr.io/ertu426/cangjie:ssh
+docker pull ghcr.io/ertu426/cangjie:ide-ssh
+docker pull ghcr.io/ertu426/cangjie:builder
 
-```bash
-# Clone the repository
-git clone https://github.com/ertu426/dgen.git
-cd dgen
-
-# Copy environment template
-cp .env.example .env
-# Edit .env to set your password, ports, etc.
-
-# Start containers
-docker compose up -d
-
-# View logs
-docker compose logs -f
-
-# Stop
-docker compose down
+# Pull vite variants
+docker pull ghcr.io/ertu426/vite:base
+docker pull ghcr.io/ertu426/vite:ide
+docker pull ghcr.io/ertu426/vite:ssh
+docker pull ghcr.io/ertu426/vite:ide-ssh
 ```
 
 ---
 
-## Access Methods
+## Development Methods
 
-### 1. Browser — Code Server
+### 1. Container Development (`base` tag)
 
-| Container | URL | Default Password |
-|-----------|-----|-----------------|
-| default   | http://localhost:30080 | `dev123456` |
-| cangjie   | http://localhost:30180 | `dev123456` |
-
-> ⚠️ Change the password via `CODE_SERVER_PASSWORD` in `.env` before exposing to a network.
-
-### 2. SSH
+Run commands directly in the container:
 
 ```bash
-# Default container
-ssh -p 30022 dev@localhost
+# Run default base image
+docker run -it --rm ghcr.io/ertu426/default:base
 
-# Cangjie container
-ssh -p 30122 dev@localhost
+# Run cangjie base with project mounted
+docker run -it --rm -v $(pwd):/home/dev/workspace ghcr.io/ertu426/cangjie:base
+
+# Run vite base
+docker run -it --rm -v $(pwd):/home/dev/workspace ghcr.io/ertu426/vite:base
 ```
 
-SSH uses **password authentication** by default.  
-To use key auth, mount your `authorized_keys` via the volume or copy it in at runtime.
+**Features included:**
+- Fish shell with Starship prompt
+- Neovim editor
+- Git + git-delta
+- Modern CLI tools (bat, eza, zoxide, btop)
 
-### 3. VS Code Dev Containers
-
-1. Open the project folder in VS Code
-2. Press `F1` → **Dev Containers: Open Folder in Container**
-3. Pick a config:
-   - `.devcontainer/devcontainer.json` — default environment
-   - `.devcontainer/devcontainer-cangjie.json` — Cangjie environment
-   - `.devcontainer/devcontainer-vite.json` — Vite / Nuxt environment
-
----
-
-## Configuration
-
-### `.env` Reference
-
-```env
-# ── Image & Registry ──────────────────────────────────────
-VERSION=latest
-PULL_POLICY=if-not-present
-GITHUB_ORG=ertu426
-
-# ── Ports ─────────────────────────────────────────────────
-DEFAULT_HTTP_PORT=30080
-DEFAULT_SSH_PORT=30022
-CANGJIE_HTTP_PORT=30180
-CANGJIE_SSH_PORT=30122
-VITE_HTTP_PORT=30280
-VITE_SSH_PORT=30222
-
-# ── Resources ─────────────────────────────────────────────
-DEFAULT_CPU_LIMIT=2
-DEFAULT_MEM_LIMIT=4G
-CANGJIE_CPU_LIMIT=2
-CANGJIE_MEM_LIMIT=4G
-VITE_CPU_LIMIT=2
-VITE_MEM_LIMIT=4G
-
-# ── Timezone & Locale ─────────────────────────────────────
-TZ=Asia/Shanghai
-
-# ── Code Server ───────────────────────────────────────────
-CODE_SERVER_PASSWORD=your_secure_password   # ← change this!
-```
-
-Copy `.env.example` as a starting point:
+#### Using code-server (`ide` tag)
 
 ```bash
-cp .env.example .env
+# Start code-server for default image
+docker run -d -p 8080:8080 --name dev-ide ghcr.io/ertu426/default:ide
+
+# Start code-server for cangjie image
+docker run -d -p 8081:8080 --name cangjie-ide ghcr.io/ertu426/cangjie:ide
+
+# Start code-server for vite image
+docker run -d -p 8082:8080 --name vite-ide ghcr.io/ertu426/vite:ide
+
+# Access in browser: http://localhost:8080 (default), 8081 (cangjie), 8082 (vite)
 ```
 
-### SSH Key Forwarding
-
-Mount your host SSH keys (read-only) into the container — already configured in `docker-compose.yaml`:
-
-```yaml
-volumes:
-  - ~/.ssh:/home/dev/.ssh:ro
-```
-
-For SSH agent forwarding, set `SSH_AUTH_SOCK` before starting:
+#### Using SSH (`ssh` tag)
 
 ```bash
-# Linux / macOS
-echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> .env
-docker compose up -d
+# Start SSH for default image
+docker run -d -p 2222:2222 --name dev-ssh ghcr.io/ertu426/default:ssh
 
-# Windows (PowerShell — with OpenSSH agent running)
-$env:SSH_AUTH_SOCK = "\\.\pipe\openssh-ssh-agent"
-docker compose up -d
+# Start SSH for cangjie image
+docker run -d -p 2223:2222 --name cangjie-ssh ghcr.io/ertu426/cangjie:ssh
+
+# Start SSH for vite image
+docker run -d -p 2224:2222 --name vite-ssh ghcr.io/ertu426/vite:ssh
+
+# Connect via SSH
+ssh -p 2222 dev@localhost  # default
+ssh -p 2223 dev@localhost  # cangjie
+ssh -p 2224 dev@localhost  # vite
+# Password: dev
 ```
 
----
+#### Using Container Development
 
-## Pre-installed Tools
+```bash
+# Container-only for default
+docker run -it --rm ghcr.io/ertu426/default:base
 
-### `default` Image
+# Container-only for cangjie
+docker run -it --rm ghcr.io/ertu426/cangjie:base
 
-| Category | Tools |
-|----------|-------|
-| **Shell** | Fish 3, Bash, Starship prompt |
-| **Editors** | Neovim, Nano |
-| **Code Server** | v4.115.0 (with Chinese UI) |
-| **Git** | Git, git-delta (side-by-side diff) |
-| **CLI** | bat, eza, fzf, ripgrep, zoxide, btop |
-| **Archives** | zip, unzip |
-| **Build** | build-essential, pkg-config |
-| **Network** | curl, wget, openssh-client/server |
-| **Locale** | `zh_CN.UTF-8` + `en_US.UTF-8` |
+# Container-only for vite
+docker run -it --rm ghcr.io/ertu426/vite:base
+```
 
-### `cangjie` Image
+### 2. SSH Development (`ssh` tag)
 
-Everything in **default**, plus:
+Develop remotely via SSH:
 
-| Category | Tools |
-|----------|-------|
-| **Cangjie SDK** | 1.1.0-beta.25 (x86_64 & aarch64) |
-| **Cangjie stdx** | 1.1.0-beta.25.1 |
-| **Cangjie VS Code ext** | Bundled in workspace |
-| **Python** | uv + Python 3.11 |
-| **Build libs** | binutils, libc-dev, libc++-dev, libgcc-14-dev |
+```bash
+# Start SSH container
+docker run -d -p 2222:2222 --name dev-ssh ghcr.io/ertu426/default:ssh
 
-### `vite` Image
+# Connect via SSH
+ssh -p 2222 dev@localhost
+# Password: dev
 
-Everything in **default**, plus:
+# With project mounted
+docker run -d -p 2222:2222 -v $(pwd):/home/dev/workspace ghcr.io/ertu426/default:ssh
 
-| Category | Tools |
-|----------|-------|
-| **Node.js** | via vite.plus bootstrap |
-| **Frontend** | Vite, Nuxt tooling |
+# VS Code Remote SSH
+# Add to ~/.ssh/config:
+# Host dev-container
+#   HostName localhost
+#   Port 2222
+#   User dev
+```
+
+**SSH Configuration:**
+- Port: 2222
+- Default user: `dev`
+- Default password: `dev`
+- Passwordless sudo enabled
+
+### 3. Code Server Development (`ide` tag)
+
+Develop in browser-based VS Code:
+
+```bash
+# Start Code Server container
+docker run -d -p 8080:8080 --name dev-ide ghcr.io/ertu426/default:ide
+
+# Access in browser
+open http://localhost:8080
+
+# With project mounted and password
+docker run -d \
+  -p 8080:8080 \
+  -v $(pwd):/home/dev/workspace \
+  ghcr.io/ertu426/default:ide
+```
+
+**Code Server Features:**
+- Port: 8080
+- Authentication: disabled by default
+- Chinese UI support
+- Pre-configured settings
+
+### 4. Combined: Code Server + SSH (`ide-ssh` tag)
+
+Both access methods in one container:
+
+```bash
+# Start container with both services
+docker run -d \
+  -p 8080:8080 \
+  -p 2222:2222 \
+  -v $(pwd):/home/dev/workspace \
+  --name dev-full \
+  ghcr.io/ertu426/default:ide-ssh
+
+# Access via browser: http://localhost:8080
+# Access via SSH: ssh -p 2222 dev@localhost
+```
 
 ---
 
@@ -203,124 +235,85 @@ Everything in **default**, plus:
 
 ```
 dgen/
-├── .devcontainer/
-│   ├── devcontainer.json            # default Dev Containers config
-│   ├── devcontainer-cangjie.json   # Cangjie Dev Containers config
-│   └── devcontainer-vite.json      # Vite / Nuxt Dev Containers config
-├── .github/
-│   └── workflows/
-│       └── build-images.yml        # CI: matrix build (amd64 + arm64)
-├── cangjie/
-│   ├── Dockerfile                  # FROM ghcr.io/ertu426/default → +Cangjie SDK + uv
-│   ├── docker-compose.yaml
-│   └── scripts/                    # SDK installation helpers
 ├── default/
-│   ├── Dockerfile                  # FROM debian:trixie-slim
-│   ├── docker-compose.yaml
-│   └── files/
-│       ├── config.fish             # Fish shell config + aliases
-│       ├── config.yaml             # Code Server config
-│       ├── starship.toml           # Starship prompt theme
-│       └── start.sh                # Container entrypoint
+│   ├── base/          # Minimal base environment
+│   ├── ide/           # + Code Server
+│   ├── ssh/           # + SSH server
+│   └── ide-ssh/       # + Code Server + SSH
+├── cangjie/
+│   ├── base/          # Cangjie SDK + uv
+│   ├── ide/           # + Code Server
+│   ├── ssh/           # + SSH
+│   ├── ide-ssh/       # + Code Server + SSH
+│   └── builder/       # Build-only environment
 ├── vite/
-│   ├── Dockerfile                  # FROM ghcr.io/ertu426/default → +Node.js + Vite
-│   └── docker-compose.yaml
-├── .dockerignore
-├── .env.example                    # Environment variable template
-├── docker-compose.yaml             # Root compose (default + cangjie + vite)
+│   ├── base/          # Node.js + Vite
+│   ├── ide/           # + Code Server
+│   ├── ssh/           # + SSH
+│   └── ide-ssh/       # + Code Server + SSH
+├── .github/workflows/
+│   ├── build-images.yml    # Multi-arch build pipeline
+│   └── test-and-pr.yml     # Test and auto PR
 └── README.md
 ```
 
 ---
 
-## Port Reference
+## Pre-installed Tools
 
-| Container | Service | Internal | External (default) |
-|-----------|---------|----------|--------------------|
-| default   | Code Server | 8080 | `DEFAULT_HTTP_PORT` = 30080 |
-| default   | SSH | 2222 | `DEFAULT_SSH_PORT` = 30022 |
-| cangjie   | Code Server | 8080 | `CANGJIE_HTTP_PORT` = 30180 |
-| cangjie   | SSH | 2222 | `CANGJIE_SSH_PORT` = 30122 |
-| vite      | Code Server | 8080 | `VITE_HTTP_PORT` = 30280 |
-| vite      | SSH | 2222 | `VITE_SSH_PORT` = 30222 |
+### Core Tools (all images)
+
+| Category | Tools |
+|----------|-------|
+| Shell | Fish 3, Bash, Starship |
+| Editors | Neovim, Nano |
+| Git | Git, git-delta |
+| CLI | bat, eza, fzf, ripgrep, zoxide, btop |
+| Network | curl, wget |
+| Locale | `zh_CN.UTF-8`, `en_US.UTF-8` |
+
+### cangjie Image Additions
+
+| Category | Tools |
+|----------|-------|
+| Cangjie | SDK 1.1.0, stdx 1.1.0 |
+| Python | uv + Python 3.11 |
+| Build | binutils, libc-dev, libc++-dev |
+
+### vite Image Additions
+
+| Category | Tools |
+|----------|-------|
+| Node.js | via vite.plus |
+| Frontend | Vite, Nuxt tooling |
 
 ---
 
 ## CI / CD
 
-Automated builds run daily at **22:00 CST** and on every push to `main`.
+### Build Pipeline
 
-**Pipeline flow:**
+Automated builds run:
+- On push to `main` branch
+- On push to `develop` branch (test + auto PR)
+- Daily at 22:00 CST
+
+### Pipeline Flow
 
 ```
-push / schedule / workflow_dispatch
-        │
-  [build-base]       build default  (amd64 + arm64)
-        │
-  [build-images]     matrix: cangjie · vite  (concurrent, amd64 + arm64)
-        │
-  [summary]          report build status (all 3 images)
-```
-
-**Features:**
-- Matrix strategy — adding a new image only requires one `include` entry
-- GHCR registry cache (`mode=max`) — shared across runners, survives re-runs
-- `docker/metadata-action` — automatic tag + label generation
-- OCI provenance + SBOM attestations
-- Manual trigger with custom tag / selective build (`all | default | downstream`)
-
----
-
-## Troubleshooting
-
-### Container won't start
-
-```bash
-docker compose logs default-develop
-docker compose build --no-cache default-develop
-```
-
-### 8080 not responding
-
-```bash
-# Check if Code Server is running inside the container
-docker exec dgen-default-dev ps aux | grep code-server
-docker exec dgen-default-dev cat /proc/1/fd/1   # stdout logs
-```
-
-### SSH connection refused
-
-```bash
-# Regenerate SSH host keys and restart
-docker exec dgen-default-dev ssh-keygen -A
-docker restart dgen-default-dev
-```
-
-### Home directory owned by root
-
-This can happen when Docker creates bind-mount directories as root before the container starts.  
-The entrypoint (`start.sh`) automatically runs `chown` to fix ownership on each boot.  
-If it persists, run manually:
-
-```bash
-docker exec -u root dgen-default-dev chown -R dev:dev /home/dev
-```
-
-### Code Server blank page
-
-```bash
-docker exec dgen-default-dev rm -rf /home/dev/.cache/code-server
-docker restart dgen-default-dev
+build-default-base → build-default-others (ide/ssh/ide-ssh)
+                  → build-cangjie (base/ide/ssh/ide-ssh/builder)
+                  → build-vite (base/ide/ssh/ide-ssh)
 ```
 
 ---
 
 ## Security Notes
 
-- **Change the default password** (`dev123456`) before exposing containers to any network
-- SSH host keys are generated **at runtime** — not baked into the image
-- Host SSH keys are mounted **read-only** (`~/.ssh:/home/dev/.ssh:ro`)
-- `dev` user has passwordless `sudo` — suitable for development, **not for production**
+- Default password `dev` should be changed for production use
+- SSH host keys generated at runtime (not baked into image)
+- `dev` user has passwordless sudo (development only)
+- Code Server auth is disabled by default
 
 ---
 

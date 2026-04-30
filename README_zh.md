@@ -2,22 +2,58 @@
 
 [English](README.md) | 中文
 
-> 基于 **Debian 13 (Trixie)** 的生产级 Docker 开发容器，预装 Code Server、Fish Shell、SSH 和多架构支持。支持通过浏览器、SSH 或 VS Code Dev Containers 进行日常开发。
+[![Build Images](https://github.com/ertu426/dgen/actions/workflows/build-images.yml/badge.svg)](https://github.com/ertu426/dgen/actions/workflows/build-images.yml)
+[![Test & PR](https://github.com/ertu426/dgen/actions/workflows/test-and-pr.yml/badge.svg)](https://github.com/ertu426/dgen/actions/workflows/test-and-pr.yml)
+
+> 基于 **Debian 13 (Trixie)** 的生产级 Docker 开发容器，支持多架构（amd64/arm64）。
 
 ---
 
 ## 可用镜像
 
-| 镜像 | 基础镜像 | 说明 |
-|------|---------|------|
-| [`default`][ghcr-default] | `debian:trixie-slim` | 通用开发环境，内含 Code Server、Fish 和现代化 CLI 工具 |
-| [`cangjie`][ghcr-cangjie] | `default` | [仓颉语言][cangjie-lang] SDK + stdx + uv / Python 3.11 |
-| [`vite`][ghcr-vite] | `default` | Node.js / Vite / Nuxt 前端开发环境 |
+### 镜像矩阵
+
+```
+ghcr.io/ertu426/default
+├── base
+├── ide
+├── ssh
+└── ide-ssh
+
+ghcr.io/ertu426/cangjie
+├── base
+├── ide
+├── ssh
+├── ide-ssh
+└── builder
+
+ghcr.io/ertu426/vite
+├── base
+├── ide
+├── ssh
+└── ide-ssh
+```
+
+| 镜像 | 说明 |
+|------|------|
+| **default** | 通用开发环境（Debian 13 + Fish + Neovim + CLI 工具） |
+| **cangjie** | [仓颉语言][cangjie-lang]开发环境（SDK 1.1.0 + stdx 1.1.0） |
+| **vite** | Node.js / Vite / Nuxt 前端开发环境 |
 
 [ghcr-default]: https://ghcr.io/ertu426/default
 [ghcr-cangjie]: https://ghcr.io/ertu426/cangjie
 [ghcr-vite]: https://ghcr.io/ertu426/vite
 [cangjie-lang]: https://cangjie-lang.cn
+
+### 标签变体
+
+| 标签 | 特性 | 使用场景 |
+|------|------|----------|
+| `base` | 最小化环境 | 纯容器开发 |
+| `ide` | + Code Server | 浏览器 IDE |
+| `ssh` | + SSH 服务 | 远程 SSH 开发 |
+| `ide-ssh` | + Code Server + SSH | 两种访问方式 |
+| `builder`（仅 cangjie） | 仅构建环境 | CI/CD 流水线 |
 
 ---
 
@@ -27,178 +63,171 @@
 
 - Docker 24+ 或 Docker Desktop
 - Docker Compose v2.0+
-- _（可选）_ VS Code + [Dev Containers 扩展][devcontainers-ext]
-
-[devcontainers-ext]: https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers
 
 ### 拉取镜像
 
 ```bash
-# 从 GHCR 拉取预构建镜像
-docker pull ghcr.io/ertu426/default:latest
-docker pull ghcr.io/ertu426/cangjie:latest
-docker pull ghcr.io/ertu426/vite:latest
+# 拉取 default 所有变体
+docker pull ghcr.io/ertu426/default:base
+docker pull ghcr.io/ertu426/default:ide
+docker pull ghcr.io/ertu426/default:ssh
+docker pull ghcr.io/ertu426/default:ide-ssh
+
+# 拉取 cangjie 所有变体
+docker pull ghcr.io/ertu426/cangjie:base
+docker pull ghcr.io/ertu426/cangjie:ide
+docker pull ghcr.io/ertu426/cangjie:ssh
+docker pull ghcr.io/ertu426/cangjie:ide-ssh
+docker pull ghcr.io/ertu426/cangjie:builder
+
+# 拉取 vite 所有变体
+docker pull ghcr.io/ertu426/vite:base
+docker pull ghcr.io/ertu426/vite:ide
+docker pull ghcr.io/ertu426/vite:ssh
+docker pull ghcr.io/ertu426/vite:ide-ssh
 ```
 
-### 使用 Docker Compose 运行
+---
+
+## 开发方式
+
+### 1. 容器开发（`base` 标签）
+
+直接在容器内运行命令：
 
 ```bash
-# 克隆仓库
-git clone https://github.com/ertu426/dgen.git
-cd dgen
+# 运行默认基础镜像
+docker run -it --rm ghcr.io/ertu426/default:base
 
-# 复制环境变量模板
-cp .env.example .env
-# 编辑 .env，设置密码、端口等
+# 挂载项目运行 cangjie
+docker run -it --rm -v $(pwd):/home/dev/workspace ghcr.io/ertu426/cangjie:base
 
+# 挂载项目运行 vite
+docker run -it --rm -v $(pwd):/home/dev/workspace ghcr.io/ertu426/vite:base
+```
+
+**包含特性：**
+- Fish shell + Starship 提示符
+- Neovim 编辑器
+- Git + git-delta
+- 现代 CLI 工具（bat, eza, zoxide, btop）
+
+#### 使用 code-server（`ide` 标签）
+
+```bash
+# 启动 default 镜像的 code-server
+docker run -d -p 8080:8080 --name dev-ide ghcr.io/ertu426/default:ide
+
+# 启动 cangjie 镜像的 code-server
+docker run -d -p 8081:8080 --name cangjie-ide ghcr.io/ertu426/cangjie:ide
+
+# 启动 vite 镜像的 code-server
+docker run -d -p 8082:8080 --name vite-ide ghcr.io/ertu426/vite:ide
+
+# 在浏览器访问: http://localhost:8080 (default), 8081 (cangjie), 8082 (vite)
+```
+
+#### 使用 SSH（`ssh` 标签）
+
+```bash
+# 启动 default 镜像的 SSH
+docker run -d -p 2222:2222 --name dev-ssh ghcr.io/ertu426/default:ssh
+
+# 启动 cangjie 镜像的 SSH
+docker run -d -p 2223:2222 --name cangjie-ssh ghcr.io/ertu426/cangjie:ssh
+
+# 启动 vite 镜像的 SSH
+docker run -d -p 2224:2222 --name vite-ssh ghcr.io/ertu426/vite:ssh
+
+# 连接 SSH
+ssh -p 2222 dev@localhost  # default
+ssh -p 2223 dev@localhost  # cangjie
+ssh -p 2224 dev@localhost  # vite
+# 密码: dev
+```
+
+#### 使用容器开发
+
+```bash
+# 仅容器运行 default
+docker run -it --rm ghcr.io/ertu426/default:base
+
+# 仅容器运行 cangjie
+docker run -it --rm ghcr.io/ertu426/cangjie:base
+
+# 仅容器运行 vite
+docker run -it --rm ghcr.io/ertu426/vite:base
+```
+
+### 2. SSH 开发（`ssh` 标签）
+
+通过 SSH 远程开发：
+
+```bash
+# 启动 SSH 容器
+docker run -d -p 2222:2222 --name dev-ssh ghcr.io/ertu426/default:ssh
+
+# 连接 SSH
+ssh -p 2222 dev@localhost
+# 密码: dev
+
+# 挂载项目
+docker run -d -p 2222:2222 -v $(pwd):/home/dev/workspace ghcr.io/ertu426/default:ssh
+
+# VS Code Remote SSH 配置
+# 添加到 ~/.ssh/config:
+# Host dev-container
+#   HostName localhost
+#   Port 2222
+#   User dev
+```
+
+**SSH 配置：**
+- 端口：2222
+- 默认用户：`dev`
+- 默认密码：`dev`
+- 无密码 sudo
+
+### 3. Code Server 开发（`ide` 标签）
+
+在浏览器中使用 VS Code 开发：
+
+```bash
+# 启动 Code Server 容器
+docker run -d -p 8080:8080 --name dev-ide ghcr.io/ertu426/default:ide
+
+# 在浏览器中访问
+open http://localhost:8080
+
+# 挂载项目
+docker run -d \
+  -p 8080:8080 \
+  -v $(pwd):/home/dev/workspace \
+  ghcr.io/ertu426/default:ide
+```
+
+**Code Server 特性：**
+- 端口：8080
+- 默认关闭认证
+- 支持中文界面
+- 预配置设置
+
+### 4. 组合方式：Code Server + SSH（`ide-ssh` 标签）
+
+同一容器支持两种访问方式：
+
+```bash
 # 启动容器
-docker compose up -d
+docker run -d \
+  -p 8080:8080 \
+  -p 2222:2222 \
+  -v $(pwd):/home/dev/workspace \
+  --name dev-full \
+  ghcr.io/ertu426/default:ide-ssh
 
-# 查看日志
-docker compose logs -f
-
-# 停止
-docker compose down
+# 浏览器访问: http://localhost:8080
+# SSH 访问: ssh -p 2222 dev@localhost
 ```
-
----
-
-## 访问方式
-
-### 1. 浏览器 — Code Server
-
-| 容器 | 地址 | 默认密码 |
-|------|------|---------|
-| default   | http://localhost:30080 | `dev123456` |
-| cangjie   | http://localhost:30180 | `dev123456` |
-| vite      | http://localhost:30280 | `dev123456` |
-
-> ⚠️ 对外暴露服务前，请通过 `.env` 中的 `CODE_SERVER_PASSWORD` 修改密码。
-
-### 2. SSH 连接
-
-```bash
-# 连接 default 容器
-ssh -p 30022 dev@localhost
-
-# 连接 cangjie 容器
-ssh -p 30122 dev@localhost
-
-# 连接 vite 容器
-ssh -p 30222 dev@localhost
-```
-
-默认使用**密码认证**。如需密钥认证，可通过 volume 挂载或在运行时复制 `authorized_keys`。
-
-### 3. VS Code Dev Containers
-
-1. 在 VS Code 中打开项目文件夹
-2. 按 `F1` → **Dev Containers: Open Folder in Container**
-3. 选择配置文件：
-   - `.devcontainer/devcontainer.json` — 默认开发环境
-   - `.devcontainer/devcontainer-cangjie.json` — 仓颉开发环境
-   - `.devcontainer/devcontainer-vite.json` — Vite / Nuxt 开发环境
-
----
-
-## 配置
-
-### `.env` 参数说明
-
-```env
-# ── 镜像与注册表 ──────────────────────────────────────────
-VERSION=latest
-PULL_POLICY=if-not-present
-GITHUB_ORG=ertu426
-
-# ── 端口 ──────────────────────────────────────────────────
-DEFAULT_HTTP_PORT=30080
-DEFAULT_SSH_PORT=30022
-CANGJIE_HTTP_PORT=30180
-CANGJIE_SSH_PORT=30122
-VITE_HTTP_PORT=30280
-VITE_SSH_PORT=30222
-
-# ── 资源限制 ───────────────────────────────────────────────
-DEFAULT_CPU_LIMIT=2
-DEFAULT_MEM_LIMIT=4G
-CANGJIE_CPU_LIMIT=2
-CANGJIE_MEM_LIMIT=4G
-VITE_CPU_LIMIT=2
-VITE_MEM_LIMIT=4G
-
-# ── 时区与语言 ─────────────────────────────────────────────
-TZ=Asia/Shanghai
-
-# ── Code Server ───────────────────────────────────────────
-CODE_SERVER_PASSWORD=your_secure_password   # ← 请修改此处！
-```
-
-从模板开始：
-
-```bash
-cp .env.example .env
-```
-
-### SSH 密钥转发
-
-宿主机 SSH 密钥已通过 `docker-compose.yaml` 以只读方式挂载：
-
-```yaml
-volumes:
-  - ~/.ssh:/home/dev/.ssh:ro
-```
-
-如需 SSH Agent 转发，启动前设置 `SSH_AUTH_SOCK`：
-
-```bash
-# Linux / macOS
-echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> .env
-docker compose up -d
-
-# Windows (PowerShell — 需启动 OpenSSH Agent 服务)
-$env:SSH_AUTH_SOCK = "\\.\pipe\openssh-ssh-agent"
-docker compose up -d
-```
-
----
-
-## 预装工具
-
-### `default` 镜像
-
-| 类别 | 工具 |
-|------|------|
-| **Shell** | Fish 3、Bash、Starship 提示符 |
-| **编辑器** | Neovim、Nano |
-| **Code Server** | v4.115.0（支持中文界面） |
-| **Git** | Git、git-delta（并排 diff） |
-| **CLI 工具** | bat、eza、fzf、ripgrep、zoxide、btop |
-| **压缩工具** | zip、unzip |
-| **构建工具** | build-essential、pkg-config |
-| **网络工具** | curl、wget、openssh-client/server |
-| **语言环境** | `zh_CN.UTF-8` + `en_US.UTF-8` |
-
-### `cangjie` 镜像
-
-包含 **default** 的全部工具，额外新增：
-
-| 类别 | 工具 |
-|------|------|
-| **仓颉 SDK** | 1.1.0-beta.25（x86_64 & aarch64） |
-| **仓颉 stdx** | 1.1.0-beta.25.1 |
-| **VS Code 扩展** | 仓颉官方扩展（预置于 workspace） |
-| **Python** | uv + Python 3.11 |
-| **构建依赖** | binutils、libc-dev、libc++-dev、libgcc-14-dev |
-
-### `vite` 镜像
-
-包含 **default** 的全部工具，额外新增：
-
-| 类别 | 工具 |
-|------|------|
-| **Node.js** | 通过 vite.plus 引导安装 |
-| **前端工具** | Vite、Nuxt 相关工具链 |
 
 ---
 
@@ -206,123 +235,85 @@ docker compose up -d
 
 ```
 dgen/
-├── .devcontainer/
-│   ├── devcontainer.json            # default Dev Containers 配置
-│   ├── devcontainer-cangjie.json   # 仓颉 Dev Containers 配置
-│   └── devcontainer-vite.json      # Vite / Nuxt Dev Containers 配置
-├── .github/
-│   └── workflows/
-│       └── build-images.yml        # CI：矩阵构建（amd64 + arm64）
-├── cangjie/
-│   ├── Dockerfile                  # FROM ghcr.io/ertu426/default → +仓颉 SDK + uv
-│   ├── docker-compose.yaml
-│   └── scripts/                    # SDK 安装辅助脚本
 ├── default/
-│   ├── Dockerfile                  # FROM debian:trixie-slim
-│   ├── docker-compose.yaml
-│   └── files/
-│       ├── config.fish             # Fish Shell 配置与别名
-│       ├── config.yaml             # Code Server 配置
-│       ├── starship.toml           # Starship 主题
-│       └── start.sh                # 容器入口脚本
+│   ├── base/          # 最小化基础环境
+│   ├── ide/           # + Code Server
+│   ├── ssh/           # + SSH 服务
+│   └── ide-ssh/       # + Code Server + SSH
+├── cangjie/
+│   ├── base/          # 仓颉 SDK + uv
+│   ├── ide/           # + Code Server
+│   ├── ssh/           # + SSH
+│   ├── ide-ssh/       # + Code Server + SSH
+│   └── builder/       # 仅构建环境
 ├── vite/
-│   ├── Dockerfile                  # FROM ghcr.io/ertu426/default → +Node.js + Vite
-│   └── docker-compose.yaml
-├── .dockerignore
-├── .env.example                    # 环境变量模板
-├── docker-compose.yaml             # 根目录 Compose（default + cangjie + vite）
+│   ├── base/          # Node.js + Vite
+│   ├── ide/           # + Code Server
+│   ├── ssh/           # + SSH
+│   └── ide-ssh/       # + Code Server + SSH
+├── .github/workflows/
+│   ├── build-images.yml    # 多架构构建流水线
+│   └── test-and-pr.yml     # 测试并自动创建 PR
 └── README.md
 ```
 
 ---
 
-## 端口说明
+## 预装工具
 
-| 容器 | 服务 | 内部端口 | 外部端口（默认） |
-|------|------|---------|----------------|
-| default | Code Server | 8080 | `DEFAULT_HTTP_PORT` = 30080 |
-| default | SSH | 2222 | `DEFAULT_SSH_PORT` = 30022 |
-| cangjie | Code Server | 8080 | `CANGJIE_HTTP_PORT` = 30180 |
-| cangjie | SSH | 2222 | `CANGJIE_SSH_PORT` = 30122 |
-| vite | Code Server | 8080 | `VITE_HTTP_PORT` = 30280 |
-| vite | SSH | 2222 | `VITE_SSH_PORT` = 30222 |
+### 核心工具（所有镜像）
+
+| 类别 | 工具 |
+|------|------|
+| Shell | Fish 3, Bash, Starship |
+| 编辑器 | Neovim, Nano |
+| Git | Git, git-delta |
+| CLI | bat, eza, fzf, ripgrep, zoxide, btop |
+| 网络 | curl, wget |
+| 语言环境 | `zh_CN.UTF-8`, `en_US.UTF-8` |
+
+### cangjie 镜像附加工具
+
+| 类别 | 工具 |
+|------|------|
+| 仓颉 | SDK 1.1.0, stdx 1.1.0 |
+| Python | uv + Python 3.11 |
+| 构建 | binutils, libc-dev, libc++-dev |
+
+### vite 镜像附加工具
+
+| 类别 | 工具 |
+|------|------|
+| Node.js | via vite.plus |
+| 前端 | Vite, Nuxt 工具链 |
 
 ---
 
 ## CI / CD
 
-自动构建在每天**北京时间 22:00** 及每次推送到 `main` 分支时触发。
+### 构建流水线
 
-**流水线流程：**
+自动构建触发条件：
+- 推送到 `main` 分支
+- 推送到 `develop` 分支（仅测试）
+- 每天北京时间 22:00
+
+### 流水线流程
 
 ```
-push / schedule / workflow_dispatch
-        │
-  [build-base]       构建 default（amd64 + arm64）
-        │
-  [build-images]     矩阵并发：cangjie · vite（amd64 + arm64）
-        │
-  [summary]          汇总构建状态（全部 3 个镜像）
-```
-
-**特性：**
-- 矩阵策略 — 新增镜像只需在 `include` 中添加一行
-- GHCR 注册表缓存（`mode=max`）— 跨 runner 共享，重跑复用
-- `docker/metadata-action` — 自动生成标签和标注
-- OCI 出处证明 + SBOM 软件物料清单
-- 手动触发支持自定义标签及选择性构建（`all | default | downstream`）
-
----
-
-## 故障排查
-
-### 容器无法启动
-
-```bash
-docker compose logs default-develop
-docker compose build --no-cache default-develop
-```
-
-### 8080 端口无响应
-
-```bash
-# 检查容器内 Code Server 是否运行
-docker exec dgen-default-dev ps aux | grep code-server
-```
-
-### SSH 连接被拒绝
-
-```bash
-# 重新生成 SSH 主机密钥并重启
-docker exec dgen-default-dev ssh-keygen -A
-docker restart dgen-default-dev
-```
-
-### 家目录文件属于 root
-
-Docker 在容器启动前以 root 身份创建 bind-mount 目录会导致此问题。  
-入口脚本（`start.sh`）每次启动时会自动执行 `chown` 修复权限。  
-若问题持续，可手动执行：
-
-```bash
-docker exec -u root dgen-default-dev chown -R dev:dev /home/dev
-```
-
-### Code Server 显示空白页
-
-```bash
-docker exec dgen-default-dev rm -rf /home/dev/.cache/code-server
-docker restart dgen-default-dev
+build-default-base → build-default-others (ide/ssh/ide-ssh)
+                  → build-cangjie (base/ide/ssh/ide-ssh/builder)
+                  → build-vite (base/ide/ssh/ide-ssh)
 ```
 
 ---
 
 ## 安全注意
 
-- **修改默认密码**（`dev123456`），任何对外暴露前必须执行
-- SSH 主机密钥在**运行时**生成，不写入镜像
-- 宿主机 SSH 密钥以**只读方式**挂载（`~/.ssh:/home/dev/.ssh:ro`）
-- `dev` 用户拥有无密码 `sudo` 权限 — 仅适用于开发环境，**不适合生产**
+- 默认密码 `dev` 应在生产环境中修改
+- SSH 主机密钥在运行时生成（不写入镜像）
+- `dev` 用户拥有无密码 sudo（仅用于开发）
+- Code Server 默认关闭认证
 
 ---
 

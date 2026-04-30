@@ -12,8 +12,8 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build-default:
-    name: Build Base (default)
+  build-default-base:
+    name: Build Default Base
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -33,35 +33,22 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
-      - name: Docker Buildx Cache
-        uses: actions/cache@v5
+      - name: Build and push default/base
+        uses: docker/build-push-action@v6
         with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-default-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-default-
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v7
-        with:
-          context: ./default
-          file: ./default/Dockerfile
+          context: ./default/base
           platforms: linux/amd64,linux/arm64
           push: true
-          outputs: type=image,name=target,annotation-index.org.opencontainers.image.description=Default programming environment
-          tags: ghcr.io/${{ github.repository_owner }}/default:latest,ghcr.io/${{ github.repository_owner }}/default:${{ github.run_id }}
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/default:latest
+            ghcr.io/${{ github.repository_owner }}/default:base
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: Move cache to prevent unbounded growth
-        run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
-
-  build-others:
-    name: Build ${{ matrix.name }}
+  build-default-others:
+    name: Build Default ${{ matrix.name }}
     runs-on: ubuntu-latest
-    needs: build-default
+    needs: build-default-base
     permissions:
       contents: read
       packages: write
@@ -69,15 +56,18 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: "cangjie"        
-            tag: "latest"
-            description: "Cangjie Programming Environment"
-          - name: "cangjie"
-            tag: "build"
-            description: "Cangjie Programming Environment (Build)"
-          - name: "vite"        
-            tag: "latest"
-            description: "VitePlus Programming Environment"
+          - name: "ide"
+            context: ./default/ide
+            tags: ide,code,code-server
+            description: "Default with Code Server"
+          - name: "ssh"
+            context: ./default/ssh
+            tags: ssh,sshd
+            description: "Default with SSH"
+          - name: "ide-ssh"
+            context: ./default/ide-ssh
+            tags: ide-ssh,ide-sshd,code-ssh,code-sshd,code-server-ssh,code-server-sshd
+            description: "Default with Code Server and SSH"
       fail-fast: false 
     
     steps:
@@ -94,27 +84,155 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
-      - name: Docker Buildx Cache
-        uses: actions/cache@v5
+      - name: Build and push ${{ matrix.name }}
+        uses: docker/build-push-action@v6
         with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ matrix.name }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-${{ matrix.name }}-
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v7
-        with:
-          context: ./${{ matrix.name }}
-          file: ./${{ matrix.name }}/Dockerfile
+          context: ${{ matrix.context }}
           platforms: linux/amd64,linux/arm64
           push: true
-          outputs: type=image,name=target,annotation-index.org.opencontainers.image.description=${{ matrix.description }}
-          tags: ghcr.io/${{ github.repository_owner }}/${{ matrix.name }}:${{ matrix.tag }},ghcr.io/${{ github.repository_owner }}/${{ matrix.name }}:${{ github.run_id }}
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+          tags: ${{ steps.generate-tags.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: Move cache to prevent unbounded growth
+      - name: Generate tags
+        id: generate-tags
         run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+          TAGS=""
+          IFS=',' read -ra TAG_ARRAY <<< "${{ matrix.tags }}"
+          for tag in "${TAG_ARRAY[@]}"; do
+              if [ -n "$TAGS" ]; then TAGS="$TAGS,"; fi
+              TAGS="$TAGSghcr.io/${{ github.repository_owner }}/default:${tag}"
+          done
+          echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
+
+  build-cangjie:
+    name: Build Cangjie ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    needs: build-default-base
+    permissions:
+      contents: read
+      packages: write
+    
+    strategy:
+      matrix:
+        include:
+          - name: "base"
+            context: ./cangjie/base
+            tags: latest,base
+            description: "Cangjie Development Environment"
+          - name: "ide"
+            context: ./cangjie/ide
+            tags: ide,code,code-server
+            description: "Cangjie with Code Server"
+          - name: "ssh"
+            context: ./cangjie/ssh
+            tags: ssh,sshd
+            description: "Cangjie with SSH"
+          - name: "ide-ssh"
+            context: ./cangjie/ide-ssh
+            tags: ide-ssh,ide-sshd,code-ssh,code-sshd,code-server-ssh,code-server-sshd
+            description: "Cangjie with Code Server and SSH"
+          - name: "builder"
+            context: ./cangjie/builder
+            tags: builder,build,sdk
+            description: "Cangjie Builder (SDK)"
+      fail-fast: false 
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Generate tags
+        id: generate-tags
+        run: |
+          TAGS=""
+          IFS=',' read -ra TAG_ARRAY <<< "${{ matrix.tags }}"
+          for tag in "${TAG_ARRAY[@]}"; do
+              if [ -n "$TAGS" ]; then TAGS="$TAGS,"; fi
+              TAGS="$TAGSghcr.io/${{ github.repository_owner }}/cangjie:${tag}"
+          done
+          echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push cangjie/${{ matrix.name }}
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.generate-tags.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-vite:
+    name: Build Vite ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    needs: build-default-base
+    permissions:
+      contents: read
+      packages: write
+    
+    strategy:
+      matrix:
+        include:
+          - name: "base"
+            context: ./vite/base
+            tags: latest,base
+            description: "VitePlus Development Environment"
+          - name: "ide"
+            context: ./vite/ide
+            tags: ide,code,code-server
+            description: "VitePlus with Code Server"
+          - name: "ssh"
+            context: ./vite/ssh
+            tags: ssh,sshd
+            description: "VitePlus with SSH"
+          - name: "ide-ssh"
+            context: ./vite/ide-ssh
+            tags: ide-ssh,ide-sshd,code-ssh,code-sshd,code-server-ssh,code-server-sshd
+            description: "VitePlus with Code Server and SSH"
+      fail-fast: false 
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Generate tags
+        id: generate-tags
+        run: |
+          TAGS=""
+          IFS=',' read -ra TAG_ARRAY <<< "${{ matrix.tags }}"
+          for tag in "${TAG_ARRAY[@]}"; do
+              if [ -n "$TAGS" ]; then TAGS="$TAGS,"; fi
+              TAGS="$TAGSghcr.io/${{ github.repository_owner }}/vite:${tag}"
+          done
+          echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push vite/${{ matrix.name }}
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.generate-tags.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
