@@ -13,11 +13,21 @@ English | [中文](README_zh.md)
 
 ### Image Matrix
 
-| Image | Tags | Description |
-|-------|------|-------------|
-| **default** | `base`, `ide`, `ssh`, `ide-ssh` | Universal dev environment |
-| **cangjie** | `base`, `ide`, `ssh`, `ide-ssh`, `builder` | [Cangjie language][cangjie-lang] development |
-| **vite** | `base`, `ide`, `ssh`, `ide-ssh` | Node.js / Vite / Nuxt frontend |
+| Image | Tag | Description |
+|-------|-----|-------------|
+| **default** | `base` | Universal dev environment |
+| **default** | `ide` | Universal dev environment + Code Server |
+| **default** | `ssh` | Universal dev environment + SSH server |
+| **default** | `ide-ssh` | Universal dev environment + Code Server + SSH |
+| **cangjie** | `base` | [Cangjie language][cangjie-lang] development |
+| **cangjie** | `ide` | Cangjie development + Code Server |
+| **cangjie** | `ssh` | Cangjie development + SSH server |
+| **cangjie** | `ide-ssh` | Cangjie development + Code Server + SSH |
+| **cangjie** | `builder` | Cangjie build-only environment for CI/CD |
+| **vite** | `base` | Node.js / Vite / Nuxt frontend |
+| **vite** | `ide` | Node.js / Vite / Nuxt + Code Server |
+| **vite** | `ssh` | Node.js / Vite / Nuxt + SSH server |
+| **vite** | `ide-ssh` | Node.js / Vite / Nuxt + Code Server + SSH |
 
 [ghcr-default]: https://ghcr.io/ertu426/default
 [ghcr-cangjie]: https://ghcr.io/ertu426/cangjie
@@ -53,11 +63,17 @@ docker pull ghcr.io/ertu426/default:ssh
 docker pull ghcr.io/ertu426/default:ide-ssh
 
 # Pull cangjie variants
-docker pull ghcr.io/ertu426/cangjie:latest
+docker pull ghcr.io/ertu426/cangjie:base
+docker pull ghcr.io/ertu426/cangjie:ide
+docker pull ghcr.io/ertu426/cangjie:ssh
+docker pull ghcr.io/ertu426/cangjie:ide-ssh
 docker pull ghcr.io/ertu426/cangjie:builder
 
 # Pull vite variants
-docker pull ghcr.io/ertu426/vite:latest
+docker pull ghcr.io/ertu426/vite:base
+docker pull ghcr.io/ertu426/vite:ide
+docker pull ghcr.io/ertu426/vite:ssh
+docker pull ghcr.io/ertu426/vite:ide-ssh
 ```
 
 ---

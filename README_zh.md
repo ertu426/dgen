@@ -15,9 +15,19 @@
 
 | 镜像 | 标签 | 说明 |
 |------|------|------|
-| **default** | `base`, `ide`, `ssh`, `ide-ssh` | 通用开发环境 |
-| **cangjie** | `base`, `ide`, `ssh`, `ide-ssh`, `builder` | [仓颉语言][cangjie-lang]开发环境 |
-| **vite** | `base`, `ide`, `ssh`, `ide-ssh` | Node.js / Vite / Nuxt 前端环境 |
+| **default** | `base` | 通用开发环境 |
+| **default** | `ide` | 通用开发环境 + Code Server |
+| **default** | `ssh` | 通用开发环境 + SSH 服务 |
+| **default** | `ide-ssh` | 通用开发环境 + Code Server + SSH |
+| **cangjie** | `base` | [仓颉语言][cangjie-lang]开发环境 |
+| **cangjie** | `ide` | 仓颉开发环境 + Code Server |
+| **cangjie** | `ssh` | 仓颉开发环境 + SSH 服务 |
+| **cangjie** | `ide-ssh` | 仓颉开发环境 + Code Server + SSH |
+| **cangjie** | `builder` | 仓颉仅构建环境，用于 CI/CD |
+| **vite** | `base` | Node.js / Vite / Nuxt 前端环境 |
+| **vite** | `ide` | Node.js / Vite / Nuxt + Code Server |
+| **vite** | `ssh` | Node.js / Vite / Nuxt + SSH 服务 |
+| **vite** | `ide-ssh` | Node.js / Vite / Nuxt + Code Server + SSH |
 
 [ghcr-default]: https://ghcr.io/ertu426/default
 [ghcr-cangjie]: https://ghcr.io/ertu426/cangjie
@@ -52,12 +62,18 @@ docker pull ghcr.io/ertu426/default:ide
 docker pull ghcr.io/ertu426/default:ssh
 docker pull ghcr.io/ertu426/default:ide-ssh
 
-# 拉取 cangjie 变体
-docker pull ghcr.io/ertu426/cangjie:latest
+# 拉取 cangjie 所有变体
+docker pull ghcr.io/ertu426/cangjie:base
+docker pull ghcr.io/ertu426/cangjie:ide
+docker pull ghcr.io/ertu426/cangjie:ssh
+docker pull ghcr.io/ertu426/cangjie:ide-ssh
 docker pull ghcr.io/ertu426/cangjie:builder
 
-# 拉取 vite 变体
-docker pull ghcr.io/ertu426/vite:latest
+# 拉取 vite 所有变体
+docker pull ghcr.io/ertu426/vite:base
+docker pull ghcr.io/ertu426/vite:ide
+docker pull ghcr.io/ertu426/vite:ssh
+docker pull ghcr.io/ertu426/vite:ide-ssh
 ```
 
 ---
