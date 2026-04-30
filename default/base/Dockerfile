@@ -7,12 +7,13 @@ ENV DEBIAN_FRONTEND=noninteractive \
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         ca-certificates \
-        curl \
         git \
+        eza \
+        curl \
         fish \
-        neovim \
-        nano \
+        sudo \
         unzip \
+        neovim \
         locales \
     && echo "en_US.UTF-8 UTF-8\nzh_CN.UTF-8 UTF-8" > /etc/locale.gen && \
     locale-gen \

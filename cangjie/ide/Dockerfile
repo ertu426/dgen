@@ -26,6 +26,7 @@ RUN ARCH="$(dpkg --print-architecture)" && \
     curl -fSL "$SDK_URL" | tar -xz
 
 RUN bash -c "$(curl -fsSL https://raw.gitcode.com/Cangjie/cangjie_stdx/raw/dev/downloader.sh)" -- 1.1.0.1 && \
+    rm -rf .cangjie_stdx .cache && \
     mv cangjie-stdx* cangjie_stdx
 
 RUN echo '' >> ~/.config/fish/config.fish && \
