@@ -85,6 +85,53 @@ docker run -it --rm -v $(pwd):/home/dev/workspace ghcr.io/ertu426/vite:base
 - Git + git-delta
 - Modern CLI tools (bat, eza, zoxide, btop)
 
+#### Using code-server (`ide` tag)
+
+```bash
+# Start code-server for default image
+docker run -d -p 8080:8080 --name dev-ide ghcr.io/ertu426/default:ide
+
+# Start code-server for cangjie image
+docker run -d -p 8081:8080 --name cangjie-ide ghcr.io/ertu426/cangjie:ide
+
+# Start code-server for vite image
+docker run -d -p 8082:8080 --name vite-ide ghcr.io/ertu426/vite:ide
+
+# Access in browser: http://localhost:8080 (default), 8081 (cangjie), 8082 (vite)
+```
+
+#### Using SSH (`ssh` tag)
+
+```bash
+# Start SSH for default image
+docker run -d -p 2222:2222 --name dev-ssh ghcr.io/ertu426/default:ssh
+
+# Start SSH for cangjie image
+docker run -d -p 2223:2222 --name cangjie-ssh ghcr.io/ertu426/cangjie:ssh
+
+# Start SSH for vite image
+docker run -d -p 2224:2222 --name vite-ssh ghcr.io/ertu426/vite:ssh
+
+# Connect via SSH
+ssh -p 2222 dev@localhost  # default
+ssh -p 2223 dev@localhost  # cangjie
+ssh -p 2224 dev@localhost  # vite
+# Password: dev
+```
+
+#### Using Container Development
+
+```bash
+# Container-only for default
+docker run -it --rm ghcr.io/ertu426/default:base
+
+# Container-only for cangjie
+docker run -it --rm ghcr.io/ertu426/cangjie:base
+
+# Container-only for vite
+docker run -it --rm ghcr.io/ertu426/vite:base
+```
+
 ### 2. SSH Development (`ssh` tag)
 
 Develop remotely via SSH:

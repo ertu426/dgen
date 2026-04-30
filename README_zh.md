@@ -85,6 +85,53 @@ docker run -it --rm -v $(pwd):/home/dev/workspace ghcr.io/ertu426/vite:base
 - Git + git-delta
 - 现代 CLI 工具（bat, eza, zoxide, btop）
 
+#### 使用 code-server（`ide` 标签）
+
+```bash
+# 启动 default 镜像的 code-server
+docker run -d -p 8080:8080 --name dev-ide ghcr.io/ertu426/default:ide
+
+# 启动 cangjie 镜像的 code-server
+docker run -d -p 8081:8080 --name cangjie-ide ghcr.io/ertu426/cangjie:ide
+
+# 启动 vite 镜像的 code-server
+docker run -d -p 8082:8080 --name vite-ide ghcr.io/ertu426/vite:ide
+
+# 在浏览器访问: http://localhost:8080 (default), 8081 (cangjie), 8082 (vite)
+```
+
+#### 使用 SSH（`ssh` 标签）
+
+```bash
+# 启动 default 镜像的 SSH
+docker run -d -p 2222:2222 --name dev-ssh ghcr.io/ertu426/default:ssh
+
+# 启动 cangjie 镜像的 SSH
+docker run -d -p 2223:2222 --name cangjie-ssh ghcr.io/ertu426/cangjie:ssh
+
+# 启动 vite 镜像的 SSH
+docker run -d -p 2224:2222 --name vite-ssh ghcr.io/ertu426/vite:ssh
+
+# 连接 SSH
+ssh -p 2222 dev@localhost  # default
+ssh -p 2223 dev@localhost  # cangjie
+ssh -p 2224 dev@localhost  # vite
+# 密码: dev
+```
+
+#### 使用容器开发
+
+```bash
+# 仅容器运行 default
+docker run -it --rm ghcr.io/ertu426/default:base
+
+# 仅容器运行 cangjie
+docker run -it --rm ghcr.io/ertu426/cangjie:base
+
+# 仅容器运行 vite
+docker run -it --rm ghcr.io/ertu426/vite:base
+```
+
 ### 2. SSH 开发（`ssh` 标签）
 
 通过 SSH 远程开发：
