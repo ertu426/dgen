@@ -87,13 +87,13 @@ jobs:
       - name: Generate tags
         id: generate-tags
         run: |
-          TAGS=""
-          IFS=',' read -ra TAG_ARRAY <<< "${{ matrix.tags }}"
-          for tag in "${TAG_ARRAY[@]}"; do
-              if [ -n "$TAGS" ]; then TAGS="$TAGS,"; fi
-              TAGS="$TAGSghcr.io/${{ github.repository_owner }}/default:${tag}"
-          done
-          echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
+          if [ "${{ matrix.name }}" = "ide" ]; then
+            echo "tags=ghcr.io/${{ github.repository_owner }}/default:ide,ghcr.io/${{ github.repository_owner }}/default:code,ghcr.io/${{ github.repository_owner }}/default:code-server" >> "$GITHUB_OUTPUT"
+          elif [ "${{ matrix.name }}" = "ssh" ]; then
+            echo "tags=ghcr.io/${{ github.repository_owner }}/default:ssh,ghcr.io/${{ github.repository_owner }}/default:sshd" >> "$GITHUB_OUTPUT"
+          elif [ "${{ matrix.name }}" = "ide-ssh" ]; then
+            echo "tags=ghcr.io/${{ github.repository_owner }}/default:ide-ssh,ghcr.io/${{ github.repository_owner }}/default:ide-sshd,ghcr.io/${{ github.repository_owner }}/default:code-ssh,ghcr.io/${{ github.repository_owner }}/default:code-sshd,ghcr.io/${{ github.repository_owner }}/default:code-server-ssh,ghcr.io/${{ github.repository_owner }}/default:code-server-sshd" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Build and push ${{ matrix.name }}
         uses: docker/build-push-action@v6
@@ -155,13 +155,17 @@ jobs:
       - name: Generate tags
         id: generate-tags
         run: |
-          TAGS=""
-          IFS=',' read -ra TAG_ARRAY <<< "${{ matrix.tags }}"
-          for tag in "${TAG_ARRAY[@]}"; do
-              if [ -n "$TAGS" ]; then TAGS="$TAGS,"; fi
-              TAGS="$TAGSghcr.io/${{ github.repository_owner }}/cangjie:${tag}"
-          done
-          echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
+          if [ "${{ matrix.name }}" = "base" ]; then
+            echo "tags=ghcr.io/${{ github.repository_owner }}/cangjie:latest,ghcr.io/${{ github.repository_owner }}/cangjie:base" >> "$GITHUB_OUTPUT"
+          elif [ "${{ matrix.name }}" = "ide" ]; then
+            echo "tags=ghcr.io/${{ github.repository_owner }}/cangjie:ide,ghcr.io/${{ github.repository_owner }}/cangjie:code,ghcr.io/${{ github.repository_owner }}/cangjie:code-server" >> "$GITHUB_OUTPUT"
+          elif [ "${{ matrix.name }}" = "ssh" ]; then
+            echo "tags=ghcr.io/${{ github.repository_owner }}/cangjie:ssh,ghcr.io/${{ github.repository_owner }}/cangjie:sshd" >> "$GITHUB_OUTPUT"
+          elif [ "${{ matrix.name }}" = "ide-ssh" ]; then
+            echo "tags=ghcr.io/${{ github.repository_owner }}/cangjie:ide-ssh,ghcr.io/${{ github.repository_owner }}/cangjie:ide-sshd,ghcr.io/${{ github.repository_owner }}/cangjie:code-ssh,ghcr.io/${{ github.repository_owner }}/cangjie:code-sshd,ghcr.io/${{ github.repository_owner }}/cangjie:code-server-ssh,ghcr.io/${{ github.repository_owner }}/cangjie:code-server-sshd" >> "$GITHUB_OUTPUT"
+          elif [ "${{ matrix.name }}" = "builder" ]; then
+            echo "tags=ghcr.io/${{ github.repository_owner }}/cangjie:builder,ghcr.io/${{ github.repository_owner }}/cangjie:build,ghcr.io/${{ github.repository_owner }}/cangjie:sdk" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Build and push cangjie/${{ matrix.name }}
         uses: docker/build-push-action@v6
@@ -219,13 +223,15 @@ jobs:
       - name: Generate tags
         id: generate-tags
         run: |
-          TAGS=""
-          IFS=',' read -ra TAG_ARRAY <<< "${{ matrix.tags }}"
-          for tag in "${TAG_ARRAY[@]}"; do
-              if [ -n "$TAGS" ]; then TAGS="$TAGS,"; fi
-              TAGS="$TAGSghcr.io/${{ github.repository_owner }}/vite:${tag}"
-          done
-          echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
+          if [ "${{ matrix.name }}" = "base" ]; then
+            echo "tags=ghcr.io/${{ github.repository_owner }}/vite:latest,ghcr.io/${{ github.repository_owner }}/vite:base" >> "$GITHUB_OUTPUT"
+          elif [ "${{ matrix.name }}" = "ide" ]; then
+            echo "tags=ghcr.io/${{ github.repository_owner }}/vite:ide,ghcr.io/${{ github.repository_owner }}/vite:code,ghcr.io/${{ github.repository_owner }}/vite:code-server" >> "$GITHUB_OUTPUT"
+          elif [ "${{ matrix.name }}" = "ssh" ]; then
+            echo "tags=ghcr.io/${{ github.repository_owner }}/vite:ssh,ghcr.io/${{ github.repository_owner }}/vite:sshd" >> "$GITHUB_OUTPUT"
+          elif [ "${{ matrix.name }}" = "ide-ssh" ]; then
+            echo "tags=ghcr.io/${{ github.repository_owner }}/vite:ide-ssh,ghcr.io/${{ github.repository_owner }}/vite:ide-sshd,ghcr.io/${{ github.repository_owner }}/vite:code-ssh,ghcr.io/${{ github.repository_owner }}/vite:code-sshd,ghcr.io/${{ github.repository_owner }}/vite:code-server-ssh,ghcr.io/${{ github.repository_owner }}/vite:code-server-sshd" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Build and push vite/${{ matrix.name }}
         uses: docker/build-push-action@v6
