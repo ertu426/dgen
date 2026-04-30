@@ -108,7 +108,7 @@ jobs:
   build-cangjie:
     name: Build Cangjie ${{ matrix.name }}
     runs-on: ubuntu-latest
-    needs: build-default-base
+    needs: build-default-others
     permissions:
       contents: read
       packages: write
@@ -176,7 +176,7 @@ jobs:
   build-vite:
     name: Build Vite ${{ matrix.name }}
     runs-on: ubuntu-latest
-    needs: build-default-base
+    needs: build-default-others
     permissions:
       contents: read
       packages: write
