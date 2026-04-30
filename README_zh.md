@@ -13,21 +13,32 @@
 
 ### 镜像矩阵
 
-| 镜像 | 标签 | 说明 |
-|------|------|------|
-| **default** | `base` | 通用开发环境 |
-| **default** | `ide` | 通用开发环境 + Code Server |
-| **default** | `ssh` | 通用开发环境 + SSH 服务 |
-| **default** | `ide-ssh` | 通用开发环境 + Code Server + SSH |
-| **cangjie** | `base` | [仓颉语言][cangjie-lang]开发环境 |
-| **cangjie** | `ide` | 仓颉开发环境 + Code Server |
-| **cangjie** | `ssh` | 仓颉开发环境 + SSH 服务 |
-| **cangjie** | `ide-ssh` | 仓颉开发环境 + Code Server + SSH |
-| **cangjie** | `builder` | 仓颉仅构建环境，用于 CI/CD |
-| **vite** | `base` | Node.js / Vite / Nuxt 前端环境 |
-| **vite** | `ide` | Node.js / Vite / Nuxt + Code Server |
-| **vite** | `ssh` | Node.js / Vite / Nuxt + SSH 服务 |
-| **vite** | `ide-ssh` | Node.js / Vite / Nuxt + Code Server + SSH |
+```
+ghcr.io/ertu426/default
+├── base
+├── ide
+├── ssh
+└── ide-ssh
+
+ghcr.io/ertu426/cangjie
+├── base
+├── ide
+├── ssh
+├── ide-ssh
+└── builder
+
+ghcr.io/ertu426/vite
+├── base
+├── ide
+├── ssh
+└── ide-ssh
+```
+
+| 镜像 | 说明 |
+|------|------|
+| **default** | 通用开发环境（Debian 13 + Fish + Neovim + CLI 工具） |
+| **cangjie** | [仓颉语言][cangjie-lang]开发环境（SDK 1.1.0 + stdx 1.1.0） |
+| **vite** | Node.js / Vite / Nuxt 前端开发环境 |
 
 [ghcr-default]: https://ghcr.io/ertu426/default
 [ghcr-cangjie]: https://ghcr.io/ertu426/cangjie

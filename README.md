@@ -13,21 +13,32 @@ English | [中文](README_zh.md)
 
 ### Image Matrix
 
-| Image | Tag | Description |
-|-------|-----|-------------|
-| **default** | `base` | Universal dev environment |
-| **default** | `ide` | Universal dev environment + Code Server |
-| **default** | `ssh` | Universal dev environment + SSH server |
-| **default** | `ide-ssh` | Universal dev environment + Code Server + SSH |
-| **cangjie** | `base` | [Cangjie language][cangjie-lang] development |
-| **cangjie** | `ide` | Cangjie development + Code Server |
-| **cangjie** | `ssh` | Cangjie development + SSH server |
-| **cangjie** | `ide-ssh` | Cangjie development + Code Server + SSH |
-| **cangjie** | `builder` | Cangjie build-only environment for CI/CD |
-| **vite** | `base` | Node.js / Vite / Nuxt frontend |
-| **vite** | `ide` | Node.js / Vite / Nuxt + Code Server |
-| **vite** | `ssh` | Node.js / Vite / Nuxt + SSH server |
-| **vite** | `ide-ssh` | Node.js / Vite / Nuxt + Code Server + SSH |
+```
+ghcr.io/ertu426/default
+├── base
+├── ide
+├── ssh
+└── ide-ssh
+
+ghcr.io/ertu426/cangjie
+├── base
+├── ide
+├── ssh
+├── ide-ssh
+└── builder
+
+ghcr.io/ertu426/vite
+├── base
+├── ide
+├── ssh
+└── ide-ssh
+```
+
+| Image | Description |
+|-------|-------------|
+| **default** | Universal dev environment (Debian 13 + Fish + Neovim + CLI tools) |
+| **cangjie** | [Cangjie language][cangjie-lang] development (SDK 1.1.0 + stdx 1.1.0) |
+| **vite** | Node.js / Vite / Nuxt frontend development |
 
 [ghcr-default]: https://ghcr.io/ertu426/default
 [ghcr-cangjie]: https://ghcr.io/ertu426/cangjie
