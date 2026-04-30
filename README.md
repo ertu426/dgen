@@ -279,12 +279,6 @@ build-default-base → build-default-others (ide/ssh/ide-ssh)
                   → build-vite (base/ide/ssh/ide-ssh)
 ```
 
-### Auto PR Workflow
-
-1. Push to `develop` branch
-2. Test all Dockerfile builds
-3. If all pass, automatically create PR to `main`
-
 ---
 
 ## Security Notes

@@ -268,7 +268,7 @@ dgen/
 
 自动构建触发条件：
 - 推送到 `main` 分支
-- 推送到 `develop` 分支（测试 + 自动 PR）
+- 推送到 `develop` 分支（仅测试）
 - 每天北京时间 22:00
 
 ### 流水线流程
@@ -278,12 +278,6 @@ build-default-base → build-default-others (ide/ssh/ide-ssh)
                   → build-cangjie (base/ide/ssh/ide-ssh/builder)
                   → build-vite (base/ide/ssh/ide-ssh)
 ```
-
-### 自动 PR 流程
-
-1. 推送到 `develop` 分支
-2. 测试所有 Dockerfile 构建
-3. 全部通过后自动创建 PR 到 `main`
 
 ---
 

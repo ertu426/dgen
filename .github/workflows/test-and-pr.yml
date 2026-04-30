@@ -1,4 +1,4 @@
-name: Test Build and Auto PR
+name: Test Build
 
 on:
   push:
@@ -142,58 +142,3 @@ jobs:
           tags: ghcr.io/${{ github.repository_owner }}/vite:test-${{ matrix.name }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-  create-pr:
-    name: Create Pull Request
-    runs-on: ubuntu-latest
-    needs: 
-      - test-default-base
-      - test-default-others
-      - test-cangjie
-      - test-vite
-    permissions:
-      contents: write
-      pull-requests: write
-    
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          head: develop
-          base: main
-          title: "[Auto PR] Merge develop to main"
-          body: |
-            ## Automated Pull Request
-            
-            This PR is automatically generated because all Docker images in the `develop` branch have been successfully built.
-            
-            ### Build Summary
-            - ✅ default/base
-            - ✅ default/ide
-            - ✅ default/ssh
-            - ✅ default/ide-ssh
-            - ✅ cangjie/base
-            - ✅ cangjie/ide
-            - ✅ cangjie/ssh
-            - ✅ cangjie/ide-ssh
-            - ✅ cangjie/builder
-            - ✅ vite/base
-            - ✅ vite/ide
-            - ✅ vite/ssh
-            - ✅ vite/ide-ssh
-            
-            ### Triggered by
-            Commit: ${{ github.sha }}
-            Author: ${{ github.actor }}
-            
-            ### Notes
-            - All Dockerfiles compile successfully on linux/amd64
-            - Review before merging to ensure no breaking changes
-          labels: |
-            automated
-            docker
-          delete-branch: false
