@@ -15,11 +15,12 @@ RUN echo "Types: deb" >> /etc/apt/sources.list.d/docker.sources && \
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        docker-ce \
         docker-ce-cli \
-        containerd.io \
         docker-buildx-plugin \
         docker-compose-plugin
+
+RUN groupadd -f docker && \
+    usermod -aG docker dev
 
 USER dev
 WORKDIR /home/dev
