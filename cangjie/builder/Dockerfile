@@ -19,24 +19,8 @@ RUN useradd -m cangjie && \
 USER cangjie
 WORKDIR /home/cangjie
 
-RUN ARCH="$(dpkg --print-architecture)" && \
-    case "$ARCH" in \
-        amd64) SDK_URL="https://cangjie-lang.cn/v1/files/auth/downLoad?nsId=142267&fileName=cangjie-sdk-linux-x64-1.1.0.tar.gz&objectKey=69e9d50c21f5a8178d6fd219" ;; \
-        arm64) SDK_URL="https://cangjie-lang.cn/v1/files/auth/downLoad?nsId=142267&fileName=cangjie-sdk-linux-aarch64-1.1.0.tar.gz&objectKey=69e9d37021f5a8178d6fd216" ;; \
-    esac && \
-    curl -fSL "$SDK_URL" | tar -xz
-
-RUN ARCH="$(dpkg --print-architecture)" && \
-    case "$ARCH" in \
-        amd64) STDX_URL="https://gitcode.com/Cangjie/cangjie_stdx/releases/download/v1.1.0.1/cangjie-stdx-linux-x64-1.1.0.1.zip" ;; \
-        arm64) STDX_URL="https://gitcode.com/Cangjie/cangjie_stdx/releases/download/v1.1.0.1/cangjie-stdx-linux-aarch64-1.1.0.1.zip" ;; \
-    esac && \
-    curl -fSL -o cangjie_stdx.zip "$STDX_URL" && \
-    unzip -q cangjie_stdx.zip -d cangjie_stdx && \
-    rm cangjie_stdx.zip
-
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
-    /home/cangjie/.local/bin/uv python install 3.11
+COPY scripts/setup-cangjie.sh /tmp/setup-cangjie.sh
+RUN bash /tmp/setup-cangjie.sh && rm /tmp/setup-cangjie.sh
 
 ENV HOME=/home/cangjie \
     CANGJIE_HOME=/home/cangjie/cangjie \

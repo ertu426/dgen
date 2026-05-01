@@ -2,6 +2,12 @@ name: Build Multi-Arch Docker Images
 
 on:
   workflow_dispatch:
+    inputs:
+      force_build:
+        description: 'Force build all images (ignore path filtering)'
+        required: false
+        default: false
+        type: boolean
   push:
     branches: [ "main", "master" ]
     tags: [ 'v*' ]
@@ -16,10 +22,14 @@ jobs:
   build-default-base:
     name: Build Default Base
     runs-on: ubuntu-latest
+    if: |
+      github.event.inputs.force_build == 'true' ||
+      github.event.inputs.force_build == '' ||
+      contains(github.event.head_commit.modified, 'default/base/')
     permissions:
       contents: read
       packages: write
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -46,31 +56,19 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  build-default-others:
-    name: Build Default ${{ matrix.name }}
+  build-default-dev:
+    name: Build Default Dev
     runs-on: ubuntu-latest
     needs: build-default-base
+    if: |
+      github.event.inputs.force_build == 'true' ||
+      github.event.inputs.force_build == '' ||
+      contains(github.event.head_commit.modified, 'default/dev/') ||
+      contains(github.event.head_commit.modified, 'scripts/')
     permissions:
       contents: read
       packages: write
-    
-    strategy:
-      matrix:
-        include:
-          - name: "dev"
-            context: ./default/dev
-            tags: dev,dood,docker-out-of-docker
-            description: "Default with Docker-out-of-Docker"
-          - name: "ide"
-            context: ./default/ide
-            tags: ide,code,code-server
-            description: "Default with Code Server"
-          - name: "ssh"
-            context: ./default/ssh
-            tags: ssh,sshd
-            description: "Default with SSH"
-      fail-fast: false 
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -85,60 +83,126 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
-      - name: Generate tags
-        id: generate-tags
-        run: |
-          if [ "${{ matrix.name }}" = "dev" ]; then
-            echo "tags=ghcr.io/${{ github.repository_owner }}/default:dev" >> "$GITHUB_OUTPUT"
-          elif [ "${{ matrix.name }}" = "ide" ]; then
-            echo "tags=ghcr.io/${{ github.repository_owner }}/default:ide,ghcr.io/${{ github.repository_owner }}/default:code,ghcr.io/${{ github.repository_owner }}/default:code-server" >> "$GITHUB_OUTPUT"
-          elif [ "${{ matrix.name }}" = "ssh" ]; then
-            echo "tags=ghcr.io/${{ github.repository_owner }}/default:ssh,ghcr.io/${{ github.repository_owner }}/default:sshd" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Build and push ${{ matrix.name }}
+      - name: Build and push default/dev
         uses: docker/build-push-action@v7
         with:
-          context: ${{ matrix.context }}
+          context: ./default/dev
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ steps.generate-tags.outputs.tags }}
+          tags: ghcr.io/${{ github.repository_owner }}/default:dev
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-default-ide:
+    name: Build Default IDE
+    runs-on: ubuntu-latest
+    needs: build-default-base
+    if: |
+      github.event.inputs.force_build == 'true' ||
+      github.event.inputs.force_build == '' ||
+      contains(github.event.head_commit.modified, 'default/ide/')
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and push default/ide
+        uses: docker/build-push-action@v7
+        with:
+          context: ./default/ide
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/default:ide
+            ghcr.io/${{ github.repository_owner }}/default:code
+            ghcr.io/${{ github.repository_owner }}/default:code-server
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-default-ssh:
+    name: Build Default SSH
+    runs-on: ubuntu-latest
+    needs: build-default-base
+    if: |
+      github.event.inputs.force_build == 'true' ||
+      github.event.inputs.force_build == '' ||
+      contains(github.event.head_commit.modified, 'default/ssh/')
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and push default/ssh
+        uses: docker/build-push-action@v7
+        with:
+          context: ./default/ssh
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/default:ssh
+            ghcr.io/${{ github.repository_owner }}/default:sshd
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
   build-cangjie:
     name: Build Cangjie ${{ matrix.name }}
     runs-on: ubuntu-latest
-    needs: build-default-others
+    needs: [build-default-base, build-default-dev]
     permissions:
       contents: read
       packages: write
-    
+
     strategy:
       matrix:
         include:
           - name: "base"
             context: ./cangjie/base
             tags: latest,base
-            description: "Cangjie Development Environment"
+            paths: "cangjie/base/"
           - name: "dev"
             context: ./cangjie/dev
-            tags: dev,dood,docker-out-of-docker
-            description: "Cangjie with Docker-out-of-Docker"
+            tags: dev
+            paths: "cangjie/dev/"
           - name: "ide"
             context: ./cangjie/ide
             tags: ide,code,code-server
-            description: "Cangjie with Code Server"
+            paths: "cangjie/ide/"
           - name: "ssh"
             context: ./cangjie/ssh
             tags: ssh,sshd
-            description: "Cangjie with SSH"
+            paths: "cangjie/ssh/"
           - name: "builder"
             context: ./cangjie/builder
             tags: builder,build,sdk
-            description: "Cangjie Builder (SDK)"
-      fail-fast: false 
-    
+            paths: "cangjie/builder/"
+      fail-fast: false
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -168,7 +232,23 @@ jobs:
             echo "tags=ghcr.io/${{ github.repository_owner }}/cangjie:builder,ghcr.io/${{ github.repository_owner }}/cangjie:build,ghcr.io/${{ github.repository_owner }}/cangjie:sdk" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Check path filter
+        id: path-check
+        run: |
+          FORCE="${{ github.event.inputs.force_build }}"
+          if [ "$FORCE" = "true" ] || [ "$FORCE" = "" ]; then
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          MODIFIED="${{ github.event.head_commit.modified }}"
+          if echo "$MODIFIED" | grep -qE "(${{ matrix.paths }}|scripts/)"; then
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build and push cangjie/${{ matrix.name }}
+        if: steps.path-check.outputs.skip != 'true'
         uses: docker/build-push-action@v7
         with:
           context: ${{ matrix.context }}
@@ -181,32 +261,32 @@ jobs:
   build-vite:
     name: Build Vite ${{ matrix.name }}
     runs-on: ubuntu-latest
-    needs: build-default-others
+    needs: [build-default-base, build-default-dev]
     permissions:
       contents: read
       packages: write
-    
+
     strategy:
       matrix:
         include:
           - name: "base"
             context: ./vite/base
             tags: latest,base
-            description: "VitePlus Development Environment"
+            paths: "vite/base/"
           - name: "dev"
             context: ./vite/dev
-            tags: dev,dood,docker-out-of-docker
-            description: "VitePlus with Docker-out-of-Docker"
+            tags: dev
+            paths: "vite/dev/"
           - name: "ide"
             context: ./vite/ide
             tags: ide,code,code-server
-            description: "VitePlus with Code Server"
+            paths: "vite/ide/"
           - name: "ssh"
             context: ./vite/ssh
             tags: ssh,sshd
-            description: "VitePlus with SSH"
-      fail-fast: false 
-    
+            paths: "vite/ssh/"
+      fail-fast: false
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -234,7 +314,23 @@ jobs:
             echo "tags=ghcr.io/${{ github.repository_owner }}/vite:ssh,ghcr.io/${{ github.repository_owner }}/vite:sshd" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Check path filter
+        id: path-check
+        run: |
+          FORCE="${{ github.event.inputs.force_build }}"
+          if [ "$FORCE" = "true" ] || [ "$FORCE" = "" ]; then
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          MODIFIED="${{ github.event.head_commit.modified }}"
+          if echo "$MODIFIED" | grep -qE "(${{ matrix.paths }}|scripts/)"; then
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build and push vite/${{ matrix.name }}
+        if: steps.path-check.outputs.skip != 'true'
         uses: docker/build-push-action@v7
         with:
           context: ${{ matrix.context }}
@@ -247,12 +343,12 @@ jobs:
   summary:
     name: Image Size Summary
     runs-on: ubuntu-latest
-    needs: [build-default-base, build-default-others, build-cangjie, build-vite]
+    needs: [build-default-base, build-default-dev, build-default-ide, build-default-ssh, build-cangjie, build-vite]
     if: always()
     permissions:
       contents: read
       packages: read
-    
+
     steps:
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v4
@@ -271,7 +367,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Image | Tag | amd64 | arm64 |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|-----|-------|-------|" >> $GITHUB_STEP_SUMMARY
-          
+
           get_size() {
             local image="$1"
             local tag="$2"
@@ -288,14 +384,14 @@ jobs:
               echo "N/A"
             fi
           }
-          
+
           echo "### default" >> $GITHUB_STEP_SUMMARY
           for tag in latest base dev ide ssh; do
             amd64=$(get_size ghcr.io/${{ github.repository_owner }}/default $tag amd64)
             arm64=$(get_size ghcr.io/${{ github.repository_owner }}/default $tag arm64)
             echo "| default | $tag | $amd64 | $arm64 |" >> $GITHUB_STEP_SUMMARY
           done
-          
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### cangjie" >> $GITHUB_STEP_SUMMARY
           for tag in latest base dev ide ssh builder; do
@@ -303,7 +399,7 @@ jobs:
             arm64=$(get_size ghcr.io/${{ github.repository_owner }}/cangjie $tag arm64)
             echo "| cangjie | $tag | $amd64 | $arm64 |" >> $GITHUB_STEP_SUMMARY
           done
-          
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### vite" >> $GITHUB_STEP_SUMMARY
           for tag in latest base dev ide ssh; do

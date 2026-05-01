@@ -16,31 +16,8 @@ WORKDIR /home/dev
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
     /home/dev/.local/bin/uv python install 3.11
 
-WORKDIR /home/dev
-
-RUN ARCH="$(dpkg --print-architecture)" && \
-    case "$ARCH" in \
-        amd64) SDK_URL="https://cangjie-lang.cn/v1/files/auth/downLoad?nsId=142267&fileName=cangjie-sdk-linux-x64-1.1.0.tar.gz&objectKey=69e9d50c21f5a8178d6fd219" ;; \
-        arm64) SDK_URL="https://cangjie-lang.cn/v1/files/auth/downLoad?nsId=142267&fileName=cangjie-sdk-linux-aarch64-1.1.0.tar.gz&objectKey=69e9d37021f5a8178d6fd216" ;; \
-    esac && \
-    curl -fSL "$SDK_URL" | tar -xz
-
-RUN ARCH="$(dpkg --print-architecture)" && \
-    case "$ARCH" in \
-        amd64) STDX_URL="https://gitcode.com/Cangjie/cangjie_stdx/releases/download/v1.1.0.1/cangjie-stdx-linux-x64-1.1.0.1.zip" ;; \
-        arm64) STDX_URL="https://gitcode.com/Cangjie/cangjie_stdx/releases/download/v1.1.0.1/cangjie-stdx-linux-aarch64-1.1.0.1.zip" ;; \
-    esac && \
-    curl -fSL -o cangjie_stdx.zip "$STDX_URL" && \
-    unzip -q cangjie_stdx.zip -d cangjie_stdx && \
-    rm cangjie_stdx.zip
-
-# Config fish
-RUN echo '' >> ~/.config/fish/config.fish && \
-    echo 'set -gx CANGJIE_HOME /home/dev/cangjie' >> ~/.config/fish/config.fish && \
-    echo 'set -gx CANGJIE_STDX_HOME /home/dev/cangjie_stdx' >> ~/.config/fish/config.fish && \
-    echo 'set -gx PATH $CANGJIE_HOME/bin $CANGJIE_HOME/tools/bin $HOME/.cjpm/bin $PATH' >> ~/.config/fish/config.fish && \
-    echo 'set -gx LD_LIBRARY_PATH $CANGJIE_HOME/runtime/lib/linux_x86_64_cjnative $CANGJIE_HOME/tools/lib $CANGJIE_STDX_HOME/static/stdx $LD_LIBRARY_PATH' >> ~/.config/fish/config.fish
-
+COPY scripts/setup-cangjie.sh /tmp/setup-cangjie.sh
+RUN bash /tmp/setup-cangjie.sh && rm /tmp/setup-cangjie.sh
 
 ENV HOME=/home/dev
 ENV CANGJIE_HOME=$HOME/cangjie
