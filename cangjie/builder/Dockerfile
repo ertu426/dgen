@@ -19,8 +19,7 @@ RUN useradd -m cangjie && \
 USER cangjie
 WORKDIR /home/cangjie
 
-COPY scripts/setup-cangjie.sh /tmp/setup-cangjie.sh
-RUN bash /tmp/setup-cangjie.sh && rm /tmp/setup-cangjie.sh
+RUN curl -LsSf https://raw.githubusercontent.com/ertu426/dgen/refs/heads/main/scripts/setup-cangjie.sh | bash
 
 ENV HOME=/home/cangjie \
     CANGJIE_HOME=/home/cangjie/cangjie \

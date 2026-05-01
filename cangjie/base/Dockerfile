@@ -16,8 +16,7 @@ WORKDIR /home/dev
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
     /home/dev/.local/bin/uv python install 3.11
 
-COPY scripts/setup-cangjie.sh /tmp/setup-cangjie.sh
-RUN bash /tmp/setup-cangjie.sh && rm /tmp/setup-cangjie.sh
+RUN curl -LsSf https://raw.githubusercontent.com/ertu426/dgen/refs/heads/main/scripts/setup-cangjie.sh | bash
 
 ENV HOME=/home/dev
 ENV CANGJIE_HOME=$HOME/cangjie
