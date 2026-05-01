@@ -64,10 +64,6 @@ jobs:
             context: ./default/ssh
             tags: ssh,sshd
             description: "Default with SSH"
-          - name: "ide-ssh"
-            context: ./default/ide-ssh
-            tags: ide-ssh,ide-sshd,code-ssh,code-sshd,code-server-ssh,code-server-sshd
-            description: "Default with Code Server and SSH"
       fail-fast: false 
     
     steps:
@@ -91,8 +87,6 @@ jobs:
             echo "tags=ghcr.io/${{ github.repository_owner }}/default:ide,ghcr.io/${{ github.repository_owner }}/default:code,ghcr.io/${{ github.repository_owner }}/default:code-server" >> "$GITHUB_OUTPUT"
           elif [ "${{ matrix.name }}" = "ssh" ]; then
             echo "tags=ghcr.io/${{ github.repository_owner }}/default:ssh,ghcr.io/${{ github.repository_owner }}/default:sshd" >> "$GITHUB_OUTPUT"
-          elif [ "${{ matrix.name }}" = "ide-ssh" ]; then
-            echo "tags=ghcr.io/${{ github.repository_owner }}/default:ide-ssh,ghcr.io/${{ github.repository_owner }}/default:ide-sshd,ghcr.io/${{ github.repository_owner }}/default:code-ssh,ghcr.io/${{ github.repository_owner }}/default:code-sshd,ghcr.io/${{ github.repository_owner }}/default:code-server-ssh,ghcr.io/${{ github.repository_owner }}/default:code-server-sshd" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Build and push ${{ matrix.name }}
@@ -128,10 +122,6 @@ jobs:
             context: ./cangjie/ssh
             tags: ssh,sshd
             description: "Cangjie with SSH"
-          - name: "ide-ssh"
-            context: ./cangjie/ide-ssh
-            tags: ide-ssh,ide-sshd,code-ssh,code-sshd,code-server-ssh,code-server-sshd
-            description: "Cangjie with Code Server and SSH"
           - name: "builder"
             context: ./cangjie/builder
             tags: builder,build,sdk
@@ -161,8 +151,6 @@ jobs:
             echo "tags=ghcr.io/${{ github.repository_owner }}/cangjie:ide,ghcr.io/${{ github.repository_owner }}/cangjie:code,ghcr.io/${{ github.repository_owner }}/cangjie:code-server" >> "$GITHUB_OUTPUT"
           elif [ "${{ matrix.name }}" = "ssh" ]; then
             echo "tags=ghcr.io/${{ github.repository_owner }}/cangjie:ssh,ghcr.io/${{ github.repository_owner }}/cangjie:sshd" >> "$GITHUB_OUTPUT"
-          elif [ "${{ matrix.name }}" = "ide-ssh" ]; then
-            echo "tags=ghcr.io/${{ github.repository_owner }}/cangjie:ide-ssh,ghcr.io/${{ github.repository_owner }}/cangjie:ide-sshd,ghcr.io/${{ github.repository_owner }}/cangjie:code-ssh,ghcr.io/${{ github.repository_owner }}/cangjie:code-sshd,ghcr.io/${{ github.repository_owner }}/cangjie:code-server-ssh,ghcr.io/${{ github.repository_owner }}/cangjie:code-server-sshd" >> "$GITHUB_OUTPUT"
           elif [ "${{ matrix.name }}" = "builder" ]; then
             echo "tags=ghcr.io/${{ github.repository_owner }}/cangjie:builder,ghcr.io/${{ github.repository_owner }}/cangjie:build,ghcr.io/${{ github.repository_owner }}/cangjie:sdk" >> "$GITHUB_OUTPUT"
           fi
@@ -200,10 +188,6 @@ jobs:
             context: ./vite/ssh
             tags: ssh,sshd
             description: "VitePlus with SSH"
-          - name: "ide-ssh"
-            context: ./vite/ide-ssh
-            tags: ide-ssh,ide-sshd,code-ssh,code-sshd,code-server-ssh,code-server-sshd
-            description: "VitePlus with Code Server and SSH"
       fail-fast: false 
     
     steps:
@@ -229,8 +213,6 @@ jobs:
             echo "tags=ghcr.io/${{ github.repository_owner }}/vite:ide,ghcr.io/${{ github.repository_owner }}/vite:code,ghcr.io/${{ github.repository_owner }}/vite:code-server" >> "$GITHUB_OUTPUT"
           elif [ "${{ matrix.name }}" = "ssh" ]; then
             echo "tags=ghcr.io/${{ github.repository_owner }}/vite:ssh,ghcr.io/${{ github.repository_owner }}/vite:sshd" >> "$GITHUB_OUTPUT"
-          elif [ "${{ matrix.name }}" = "ide-ssh" ]; then
-            echo "tags=ghcr.io/${{ github.repository_owner }}/vite:ide-ssh,ghcr.io/${{ github.repository_owner }}/vite:ide-sshd,ghcr.io/${{ github.repository_owner }}/vite:code-ssh,ghcr.io/${{ github.repository_owner }}/vite:code-sshd,ghcr.io/${{ github.repository_owner }}/vite:code-server-ssh,ghcr.io/${{ github.repository_owner }}/vite:code-server-sshd" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Build and push vite/${{ matrix.name }}
