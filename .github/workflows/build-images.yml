@@ -361,7 +361,6 @@ jobs:
         uses: imjasonh/setup-crane@v0.4
 
       - name: Get image sizes
-        id: sizes
         run: |
           echo "## Image Size Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -372,14 +371,9 @@ jobs:
             local image="$1"
             local tag="$2"
             local arch="$3"
-            local digest=$(crane manifest --platform linux/$arch $image:$tag 2>/dev/null | jq -r '.manifests[0].digest // empty')
-            if [ -n "$digest" ]; then
-              local size=$(crane manifest $image@$digest 2>/dev/null | jq -r '.layers | map(.size) | add // 0')
-              if [ "$size" != "null" ] && [ "$size" -gt 0 ]; then
-                echo "$(numfmt --to=iec-i --suffix=B $size)"
-              else
-                echo "N/A"
-              fi
+            local size=$(crane size ${image}:${tag} --platform linux/$arch 2>/dev/null | awk '{print $1}')
+            if [ -n "$size" ] && [ "$size" != "0" ]; then
+              echo "$size"
             else
               echo "N/A"
             fi
