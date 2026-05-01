@@ -15,17 +15,20 @@
 ```
 ghcr.io/ertu426/default
 ├── base
+├── dev
 ├── ide
 └── ssh
 
 ghcr.io/ertu426/cangjie
 ├── base
+├── dev
 ├── ide
 ├── ssh
 └── builder
 
 ghcr.io/ertu426/vite
 ├── base
+├── dev
 ├── ide
 └── ssh
 ```
@@ -33,8 +36,11 @@ ghcr.io/ertu426/vite
 | 镜像 | 说明 |
 |------|------|
 | **default** | 通用开发环境（Debian 13 + Fish + Neovim + CLI 工具） |
+| **default** | `dev` - Dev Container 环境（Docker-in-Docker 支持 devcontainer） |
 | **cangjie** | [仓颉语言][cangjie-lang]开发环境（SDK 1.1.0 + stdx 1.1.0） |
+| **cangjie** | `dev` - Dev Container 环境（Docker-in-Docker 支持 devcontainer） |
 | **vite** | Node.js / Vite / Nuxt 前端开发环境 |
+| **vite** | `dev` - Dev Container 环境（Docker-in-Docker 支持 devcontainer） |
 
 [ghcr-default]: https://ghcr.io/ertu426/default
 [ghcr-cangjie]: https://ghcr.io/ertu426/cangjie
@@ -46,6 +52,7 @@ ghcr.io/ertu426/vite
 | 标签 | 特性 | 使用场景 |
 |------|------|----------|
 | `base` | 最小化环境 | 纯容器开发 |
+| `dev` | + Docker-in-Docker | Dev Container / VS Code devcontainer |
 | `ide` | + Code Server | 浏览器 IDE |
 | `ssh` | + SSH 服务 | 远程 SSH 开发 |
 | `builder`（仅 cangjie） | 仅构建环境 | CI/CD 流水线 |
@@ -64,17 +71,20 @@ ghcr.io/ertu426/vite
 ```bash
 # 拉取 default 所有变体
 docker pull ghcr.io/ertu426/default:base
+docker pull ghcr.io/ertu426/default:dev
 docker pull ghcr.io/ertu426/default:ide
 docker pull ghcr.io/ertu426/default:ssh
 
 # 拉取 cangjie 所有变体
 docker pull ghcr.io/ertu426/cangjie:base
+docker pull ghcr.io/ertu426/cangjie:dev
 docker pull ghcr.io/ertu426/cangjie:ide
 docker pull ghcr.io/ertu426/cangjie:ssh
 docker pull ghcr.io/ertu426/cangjie:builder
 
 # 拉取 vite 所有变体
 docker pull ghcr.io/ertu426/vite:base
+docker pull ghcr.io/ertu426/vite:dev
 docker pull ghcr.io/ertu426/vite:ide
 docker pull ghcr.io/ertu426/vite:ssh
 ```
@@ -212,15 +222,18 @@ docker run -d \
 dgen/
 ├── default/
 │   ├── base/          # 最小化基础环境
+│   ├── dev/           # + Docker-in-Docker (devcontainer)
 │   ├── ide/           # + Code Server
 │   └── ssh/           # + SSH 服务
 ├── cangjie/
 │   ├── base/          # 仓颉 SDK + uv
+│   ├── dev/           # + Docker-in-Docker (devcontainer)
 │   ├── ide/           # + Code Server
 │   ├── ssh/           # + SSH
 │   └── builder/       # 仅构建环境
 ├── vite/
 │   ├── base/          # Node.js + Vite
+│   ├── dev/           # + Docker-in-Docker (devcontainer)
 │   ├── ide/           # + Code Server
 │   └── ssh/           # + SSH
 ├── .github/workflows/
@@ -272,9 +285,9 @@ dgen/
 ### 流水线流程
 
 ```
-build-default-base → build-default-others (ide/ssh)
-                  → build-cangjie (base/ide/ssh/builder)
-                  → build-vite (base/ide/ssh)
+build-default-base → build-default-others (dev/ide/ssh)
+                  → build-cangjie (base/dev/ide/ssh/builder)
+                  → build-vite (base/dev/ide/ssh)
 ```
 
 ---

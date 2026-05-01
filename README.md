@@ -15,17 +15,20 @@ English | [中文](README_zh.md)
 ```
 ghcr.io/ertu426/default
 ├── base
+├── dev
 ├── ide
 └── ssh
 
 ghcr.io/ertu426/cangjie
 ├── base
+├── dev
 ├── ide
 ├── ssh
 └── builder
 
 ghcr.io/ertu426/vite
 ├── base
+├── dev
 ├── ide
 └── ssh
 ```
@@ -33,8 +36,11 @@ ghcr.io/ertu426/vite
 | Image | Description |
 |-------|-------------|
 | **default** | Universal dev environment (Debian 13 + Fish + Neovim + CLI tools) |
+| **default** | `dev` - Dev Container environment (Docker-in-Docker for devcontainer) |
 | **cangjie** | [Cangjie language][cangjie-lang] development (SDK 1.1.0 + stdx 1.1.0) |
+| **cangjie** | `dev` - Dev Container environment (Docker-in-Docker for devcontainer) |
 | **vite** | Node.js / Vite / Nuxt frontend development |
+| **vite** | `dev` - Dev Container environment (Docker-in-Docker for devcontainer) |
 
 [ghcr-default]: https://ghcr.io/ertu426/default
 [ghcr-cangjie]: https://ghcr.io/ertu426/cangjie
@@ -46,6 +52,7 @@ ghcr.io/ertu426/vite
 | Tag | Features | Use Case |
 |-----|----------|----------|
 | `base` | Minimal environment | Container-only development |
+| `dev` | + Docker-in-Docker | Dev Container / VS Code devcontainer |
 | `ide` | + Code Server | Browser-based IDE |
 | `ssh` | + SSH server | Remote SSH development |
 | `builder` (cangjie only) | Build-only environment | CI/CD pipelines |
@@ -64,17 +71,20 @@ ghcr.io/ertu426/vite
 ```bash
 # Pull all default variants
 docker pull ghcr.io/ertu426/default:base
+docker pull ghcr.io/ertu426/default:dev
 docker pull ghcr.io/ertu426/default:ide
 docker pull ghcr.io/ertu426/default:ssh
 
 # Pull cangjie variants
 docker pull ghcr.io/ertu426/cangjie:base
+docker pull ghcr.io/ertu426/cangjie:dev
 docker pull ghcr.io/ertu426/cangjie:ide
 docker pull ghcr.io/ertu426/cangjie:ssh
 docker pull ghcr.io/ertu426/cangjie:builder
 
 # Pull vite variants
 docker pull ghcr.io/ertu426/vite:base
+docker pull ghcr.io/ertu426/vite:dev
 docker pull ghcr.io/ertu426/vite:ide
 docker pull ghcr.io/ertu426/vite:ssh
 ```
@@ -212,15 +222,18 @@ docker run -d \
 dgen/
 ├── default/
 │   ├── base/          # Minimal base environment
+│   ├── dev/           # + Docker-in-Docker (devcontainer)
 │   ├── ide/           # + Code Server
 │   └── ssh/           # + SSH server
 ├── cangjie/
 │   ├── base/          # Cangjie SDK + uv
+│   ├── dev/           # + Docker-in-Docker (devcontainer)
 │   ├── ide/           # + Code Server
 │   ├── ssh/           # + SSH
 │   └── builder/       # Build-only environment
 ├── vite/
 │   ├── base/          # Node.js + Vite
+│   ├── dev/           # + Docker-in-Docker (devcontainer)
 │   ├── ide/           # + Code Server
 │   └── ssh/           # + SSH
 ├── .github/workflows/
@@ -272,9 +285,9 @@ Automated builds run:
 ### Pipeline Flow
 
 ```
-build-default-base → build-default-others (ide/ssh)
-                  → build-cangjie (base/ide/ssh/builder)
-                  → build-vite (base/ide/ssh)
+build-default-base → build-default-others (dev/ide/ssh)
+                  → build-cangjie (base/dev/ide/ssh/builder)
+                  → build-vite (base/dev/ide/ssh)
 ```
 
 ---
