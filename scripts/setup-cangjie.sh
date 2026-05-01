@@ -16,6 +16,8 @@ esac
 curl -fSL "$SDK_URL" | tar -xz
 
 mkdir -p cangjie_stdx
-curl -fSL "$STDX_URL" | unzip -o -j -d cangjie_stdx || echo "STDX download failed, skipping..."
+curl -fSL "$STDX_URL" -o cangjie_stdx.zip
+unzip -q cangjie_stdx.zip -d cangjie_stdx
+rm -rf cangjie_stdx.zip
 
 echo "Cangjie SDK and STDX installed successfully"

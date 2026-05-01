@@ -34,14 +34,12 @@ set -gx SAVEHIST 10000
 # =============================================================================
 
 # List commands
-alias ll "eza -la --icons --group-directories-first"
-alias ls "eza -l --icons --group-directories-first"
+alias ll "eza -lga --icons --group-directories-first"
+alias ls "eza -lg --icons --group-directories-first"
 alias lt "eza --tree --icons --level=2"
 
 # Shortcuts
 alias c "clear"
-alias cat "batcat"
-alias top "btop"
 alias cd "z"
 
 # Safety aliases
