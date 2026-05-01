@@ -6,7 +6,10 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        ca-certificates \
+        ca-certificates && \
+    sed -i 's/http/https/g' /etc/apt/sources.list.d/debian.sources && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
         git \
         eza \
         curl \
