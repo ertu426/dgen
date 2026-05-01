@@ -3,7 +3,6 @@
 [English](README.md) | 中文
 
 [![Build Images](https://github.com/ertu426/dgen/actions/workflows/build-images.yml/badge.svg)](https://github.com/ertu426/dgen/actions/workflows/build-images.yml)
-[![Test & PR](https://github.com/ertu426/dgen/actions/workflows/test-and-pr.yml/badge.svg)](https://github.com/ertu426/dgen/actions/workflows/test-and-pr.yml)
 
 > 基于 **Debian 13 (Trixie)** 的生产级 Docker 开发容器，支持多架构（amd64/arm64）。
 
@@ -17,21 +16,18 @@
 ghcr.io/ertu426/default
 ├── base
 ├── ide
-├── ssh
-└── ide-ssh
+└── ssh
 
 ghcr.io/ertu426/cangjie
 ├── base
 ├── ide
 ├── ssh
-├── ide-ssh
 └── builder
 
 ghcr.io/ertu426/vite
 ├── base
 ├── ide
-├── ssh
-└── ide-ssh
+└── ssh
 ```
 
 | 镜像 | 说明 |
@@ -52,7 +48,6 @@ ghcr.io/ertu426/vite
 | `base` | 最小化环境 | 纯容器开发 |
 | `ide` | + Code Server | 浏览器 IDE |
 | `ssh` | + SSH 服务 | 远程 SSH 开发 |
-| `ide-ssh` | + Code Server + SSH | 两种访问方式 |
 | `builder`（仅 cangjie） | 仅构建环境 | CI/CD 流水线 |
 
 ---
@@ -71,20 +66,17 @@ ghcr.io/ertu426/vite
 docker pull ghcr.io/ertu426/default:base
 docker pull ghcr.io/ertu426/default:ide
 docker pull ghcr.io/ertu426/default:ssh
-docker pull ghcr.io/ertu426/default:ide-ssh
 
 # 拉取 cangjie 所有变体
 docker pull ghcr.io/ertu426/cangjie:base
 docker pull ghcr.io/ertu426/cangjie:ide
 docker pull ghcr.io/ertu426/cangjie:ssh
-docker pull ghcr.io/ertu426/cangjie:ide-ssh
 docker pull ghcr.io/ertu426/cangjie:builder
 
 # 拉取 vite 所有变体
 docker pull ghcr.io/ertu426/vite:base
 docker pull ghcr.io/ertu426/vite:ide
 docker pull ghcr.io/ertu426/vite:ssh
-docker pull ghcr.io/ertu426/vite:ide-ssh
 ```
 
 ---
@@ -212,23 +204,6 @@ docker run -d \
 - 支持中文界面
 - 预配置设置
 
-### 4. 组合方式：Code Server + SSH（`ide-ssh` 标签）
-
-同一容器支持两种访问方式：
-
-```bash
-# 启动容器
-docker run -d \
-  -p 8080:8080 \
-  -p 2222:2222 \
-  -v $(pwd):/home/dev/workspace \
-  --name dev-full \
-  ghcr.io/ertu426/default:ide-ssh
-
-# 浏览器访问: http://localhost:8080
-# SSH 访问: ssh -p 2222 dev@localhost
-```
-
 ---
 
 ## 项目结构
@@ -238,22 +213,18 @@ dgen/
 ├── default/
 │   ├── base/          # 最小化基础环境
 │   ├── ide/           # + Code Server
-│   ├── ssh/           # + SSH 服务
-│   └── ide-ssh/       # + Code Server + SSH
+│   └── ssh/           # + SSH 服务
 ├── cangjie/
 │   ├── base/          # 仓颉 SDK + uv
 │   ├── ide/           # + Code Server
 │   ├── ssh/           # + SSH
-│   ├── ide-ssh/       # + Code Server + SSH
 │   └── builder/       # 仅构建环境
 ├── vite/
 │   ├── base/          # Node.js + Vite
 │   ├── ide/           # + Code Server
-│   ├── ssh/           # + SSH
-│   └── ide-ssh/       # + Code Server + SSH
+│   └── ssh/           # + SSH
 ├── .github/workflows/
-│   ├── build-images.yml    # 多架构构建流水线
-│   └── test-and-pr.yml     # 测试并自动创建 PR
+│   └── build-images.yml    # 多架构构建流水线
 └── README.md
 ```
 
@@ -301,9 +272,9 @@ dgen/
 ### 流水线流程
 
 ```
-build-default-base → build-default-others (ide/ssh/ide-ssh)
-                  → build-cangjie (base/ide/ssh/ide-ssh/builder)
-                  → build-vite (base/ide/ssh/ide-ssh)
+build-default-base → build-default-others (ide/ssh)
+                  → build-cangjie (base/ide/ssh/builder)
+                  → build-vite (base/ide/ssh)
 ```
 
 ---

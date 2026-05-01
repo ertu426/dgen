@@ -3,7 +3,6 @@
 English | [中文](README_zh.md)
 
 [![Build Images](https://github.com/ertu426/dgen/actions/workflows/build-images.yml/badge.svg)](https://github.com/ertu426/dgen/actions/workflows/build-images.yml)
-[![Test & PR](https://github.com/ertu426/dgen/actions/workflows/test-and-pr.yml/badge.svg)](https://github.com/ertu426/dgen/actions/workflows/test-and-pr.yml)
 
 > Production-ready Docker development containers based on **Debian 13 (Trixie)** with multi-arch support (amd64/arm64).
 
@@ -17,21 +16,18 @@ English | [中文](README_zh.md)
 ghcr.io/ertu426/default
 ├── base
 ├── ide
-├── ssh
-└── ide-ssh
+└── ssh
 
 ghcr.io/ertu426/cangjie
 ├── base
 ├── ide
 ├── ssh
-├── ide-ssh
 └── builder
 
 ghcr.io/ertu426/vite
 ├── base
 ├── ide
-├── ssh
-└── ide-ssh
+└── ssh
 ```
 
 | Image | Description |
@@ -52,7 +48,6 @@ ghcr.io/ertu426/vite
 | `base` | Minimal environment | Container-only development |
 | `ide` | + Code Server | Browser-based IDE |
 | `ssh` | + SSH server | Remote SSH development |
-| `ide-ssh` | + Code Server + SSH | Both access methods |
 | `builder` (cangjie only) | Build-only environment | CI/CD pipelines |
 
 ---
@@ -71,20 +66,17 @@ ghcr.io/ertu426/vite
 docker pull ghcr.io/ertu426/default:base
 docker pull ghcr.io/ertu426/default:ide
 docker pull ghcr.io/ertu426/default:ssh
-docker pull ghcr.io/ertu426/default:ide-ssh
 
 # Pull cangjie variants
 docker pull ghcr.io/ertu426/cangjie:base
 docker pull ghcr.io/ertu426/cangjie:ide
 docker pull ghcr.io/ertu426/cangjie:ssh
-docker pull ghcr.io/ertu426/cangjie:ide-ssh
 docker pull ghcr.io/ertu426/cangjie:builder
 
 # Pull vite variants
 docker pull ghcr.io/ertu426/vite:base
 docker pull ghcr.io/ertu426/vite:ide
 docker pull ghcr.io/ertu426/vite:ssh
-docker pull ghcr.io/ertu426/vite:ide-ssh
 ```
 
 ---
@@ -212,23 +204,6 @@ docker run -d \
 - Chinese UI support
 - Pre-configured settings
 
-### 4. Combined: Code Server + SSH (`ide-ssh` tag)
-
-Both access methods in one container:
-
-```bash
-# Start container with both services
-docker run -d \
-  -p 8080:8080 \
-  -p 2222:2222 \
-  -v $(pwd):/home/dev/workspace \
-  --name dev-full \
-  ghcr.io/ertu426/default:ide-ssh
-
-# Access via browser: http://localhost:8080
-# Access via SSH: ssh -p 2222 dev@localhost
-```
-
 ---
 
 ## Project Structure
@@ -238,22 +213,18 @@ dgen/
 ├── default/
 │   ├── base/          # Minimal base environment
 │   ├── ide/           # + Code Server
-│   ├── ssh/           # + SSH server
-│   └── ide-ssh/       # + Code Server + SSH
+│   └── ssh/           # + SSH server
 ├── cangjie/
 │   ├── base/          # Cangjie SDK + uv
 │   ├── ide/           # + Code Server
 │   ├── ssh/           # + SSH
-│   ├── ide-ssh/       # + Code Server + SSH
 │   └── builder/       # Build-only environment
 ├── vite/
 │   ├── base/          # Node.js + Vite
 │   ├── ide/           # + Code Server
-│   ├── ssh/           # + SSH
-│   └── ide-ssh/       # + Code Server + SSH
+│   └── ssh/           # + SSH
 ├── .github/workflows/
-│   ├── build-images.yml    # Multi-arch build pipeline
-│   └── test-and-pr.yml     # Test and auto PR
+│   └── build-images.yml    # Multi-arch build pipeline
 └── README.md
 ```
 
@@ -301,9 +272,9 @@ Automated builds run:
 ### Pipeline Flow
 
 ```
-build-default-base → build-default-others (ide/ssh/ide-ssh)
-                  → build-cangjie (base/ide/ssh/ide-ssh/builder)
-                  → build-vite (base/ide/ssh/ide-ssh)
+build-default-base → build-default-others (ide/ssh)
+                  → build-cangjie (base/ide/ssh/builder)
+                  → build-vite (base/ide/ssh)
 ```
 
 ---
