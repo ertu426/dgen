@@ -56,6 +56,10 @@ jobs:
     strategy:
       matrix:
         include:
+          - name: "dev"
+            context: ./default/dev
+            tags: dev,dood,docker-out-of-docker
+            description: "Default with Docker-out-of-Docker"
           - name: "ide"
             context: ./default/ide
             tags: ide,code,code-server
@@ -83,7 +87,9 @@ jobs:
       - name: Generate tags
         id: generate-tags
         run: |
-          if [ "${{ matrix.name }}" = "ide" ]; then
+          if [ "${{ matrix.name }}" = "dev" ]; then
+            echo "tags=ghcr.io/${{ github.repository_owner }}/default:dev" >> "$GITHUB_OUTPUT"
+          elif [ "${{ matrix.name }}" = "ide" ]; then
             echo "tags=ghcr.io/${{ github.repository_owner }}/default:ide,ghcr.io/${{ github.repository_owner }}/default:code,ghcr.io/${{ github.repository_owner }}/default:code-server" >> "$GITHUB_OUTPUT"
           elif [ "${{ matrix.name }}" = "ssh" ]; then
             echo "tags=ghcr.io/${{ github.repository_owner }}/default:ssh,ghcr.io/${{ github.repository_owner }}/default:sshd" >> "$GITHUB_OUTPUT"
@@ -114,6 +120,10 @@ jobs:
             context: ./cangjie/base
             tags: latest,base
             description: "Cangjie Development Environment"
+          - name: "dev"
+            context: ./cangjie/dev
+            tags: dev,dood,docker-out-of-docker
+            description: "Cangjie with Docker-out-of-Docker"
           - name: "ide"
             context: ./cangjie/ide
             tags: ide,code,code-server
@@ -147,6 +157,8 @@ jobs:
         run: |
           if [ "${{ matrix.name }}" = "base" ]; then
             echo "tags=ghcr.io/${{ github.repository_owner }}/cangjie:latest,ghcr.io/${{ github.repository_owner }}/cangjie:base" >> "$GITHUB_OUTPUT"
+          elif [ "${{ matrix.name }}" = "dev" ]; then
+            echo "tags=ghcr.io/${{ github.repository_owner }}/cangjie:dev" >> "$GITHUB_OUTPUT"
           elif [ "${{ matrix.name }}" = "ide" ]; then
             echo "tags=ghcr.io/${{ github.repository_owner }}/cangjie:ide,ghcr.io/${{ github.repository_owner }}/cangjie:code,ghcr.io/${{ github.repository_owner }}/cangjie:code-server" >> "$GITHUB_OUTPUT"
           elif [ "${{ matrix.name }}" = "ssh" ]; then
@@ -180,6 +192,10 @@ jobs:
             context: ./vite/base
             tags: latest,base
             description: "VitePlus Development Environment"
+          - name: "dev"
+            context: ./vite/dev
+            tags: dev,dood,docker-out-of-docker
+            description: "VitePlus with Docker-out-of-Docker"
           - name: "ide"
             context: ./vite/ide
             tags: ide,code,code-server
@@ -209,6 +225,8 @@ jobs:
         run: |
           if [ "${{ matrix.name }}" = "base" ]; then
             echo "tags=ghcr.io/${{ github.repository_owner }}/vite:latest,ghcr.io/${{ github.repository_owner }}/vite:base" >> "$GITHUB_OUTPUT"
+          elif [ "${{ matrix.name }}" = "dev" ]; then
+            echo "tags=ghcr.io/${{ github.repository_owner }}/vite:dev" >> "$GITHUB_OUTPUT"
           elif [ "${{ matrix.name }}" = "ide" ]; then
             echo "tags=ghcr.io/${{ github.repository_owner }}/vite:ide,ghcr.io/${{ github.repository_owner }}/vite:code,ghcr.io/${{ github.repository_owner }}/vite:code-server" >> "$GITHUB_OUTPUT"
           elif [ "${{ matrix.name }}" = "ssh" ]; then
