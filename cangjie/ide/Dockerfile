@@ -25,9 +25,14 @@ RUN ARCH="$(dpkg --print-architecture)" && \
     esac && \
     curl -fSL "$SDK_URL" | tar -xz
 
-RUN bash -c "$(curl -fsSL https://raw.gitcode.com/Cangjie/cangjie_stdx/raw/dev/downloader.sh)" -- 1.1.0.1 && \
-    rm -rf .cangjie_stdx .cache && \
-    mv cangjie-stdx* cangjie_stdx
+RUN ARCH="$(dpkg --print-architecture)" && \
+    case "$ARCH" in \
+        amd64) STDX_URL="https://gitcode.com/Cangjie/cangjie_stdx/releases/download/v1.1.0.1/cangjie-stdx-linux-x64-1.1.0.1.zip" ;; \
+        arm64) STDX_URL="https://gitcode.com/Cangjie/cangjie_stdx/releases/download/v1.1.0.1/cangjie-stdx-linux-aarch64-1.1.0.1.zip" ;; \
+    esac && \
+    curl -fSL -o cangjie_stdx.zip "$STDX_URL" && \
+    unzip -q cangjie_stdx.zip -d cangjie_stdx && \
+    rm cangjie_stdx.zip
 
 RUN echo '' >> ~/.config/fish/config.fish && \
     echo 'set -gx CANGJIE_HOME /home/dev/cangjie' >> ~/.config/fish/config.fish && \

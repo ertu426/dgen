@@ -13,6 +13,7 @@ RUN apt-get update && \
         fish \
         sudo \
         unzip \
+        zoxide \
         neovim \
         locales \
     && echo "en_US.UTF-8 UTF-8\nzh_CN.UTF-8 UTF-8" > /etc/locale.gen && \
